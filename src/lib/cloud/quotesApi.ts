@@ -2,7 +2,13 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { CloudQuote, SaveQuotePayload } from './quoteMapping'
 
 /** Errors the UI distinguishes; anything else is surfaced as a generic failure. */
-export type CloudErrorCode = 'AUTH_REQUIRED' | 'QUOTA_EXCEEDED' | 'INVALID_INPUT' | 'NETWORK' | 'INTERNAL_ERROR'
+export type CloudErrorCode =
+  | 'AUTH_REQUIRED'
+  | 'QUOTA_EXCEEDED'
+  | 'INVALID_INPUT'
+  | 'NETWORK'
+  | 'INTERNAL_ERROR'
+  | 'NOT_PROVISIONED'
 
 export class CloudError extends Error {
   readonly code: CloudErrorCode
@@ -28,6 +34,12 @@ function toCloudError(error: { message?: string; code?: string } | null): CloudE
   }
   if (message.includes('INVALID_INPUT') || error?.code === '23514' || error?.code === '23503') {
     return new CloudError('INVALID_INPUT', 'Data penawaran tidak valid.')
+  }
+  // Env configured but the Phase 2 migration never applied — a fresh project, or
+  // someone re-pointed VITE_SUPABASE_URL. PostgREST reports a missing RPC/table
+  // rather than an auth error, so name the real cause instead of "coba lagi".
+  if (error?.code === 'PGRST202' || error?.code === 'PGRST205' || error?.code === '42P01') {
+    return new CloudError('NOT_PROVISIONED', 'Cloud belum disiapkan. Jalankan migrasi Phase 2 di project Supabase.')
   }
   if (error?.code === 'PGRST301' || error?.code === '401') {
     return new CloudError('AUTH_REQUIRED', 'Sesi sudah berakhir. Masuk ulang.')

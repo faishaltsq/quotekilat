@@ -74,6 +74,15 @@ describe('saveQuoteToCloud', () => {
     await expect(saveQuoteToCloud(client, payload)).rejects.toMatchObject({ code: 'AUTH_REQUIRED' })
   })
 
+  it('names a missing migration instead of blaming the network', async () => {
+    for (const code of ['PGRST202', 'PGRST205', '42P01']) {
+      const { client } = rpcStub({ error: { message: 'not found', code } })
+      await expect(saveQuoteToCloud(client, payload)).rejects.toMatchObject({
+        code: 'NOT_PROVISIONED',
+      })
+    }
+  })
+
   it('falls back to INTERNAL_ERROR for an unknown failure', async () => {
     const { client } = rpcStub({ error: { message: 'boom', code: 'XX000' } })
     await expect(saveQuoteToCloud(client, payload)).rejects.toMatchObject({ code: 'INTERNAL_ERROR' })
