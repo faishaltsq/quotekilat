@@ -1,0 +1,23 @@
+{
+  "//": "The Vercel builder emits ESM for api functions while the generated /var/task/package.json carries no module type, so Node loads them as CommonJS and every import throws. This project compiles the same server code to CommonJS itself and ships a thin .cjs entry instead.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
+    "types": ["node"],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": false,
+    "isolatedModules": false,
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "outDir": "vercel-api",
+    "rootDir": ".",
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["server/**/*.ts", "src/lib/ai/schema.ts", "src/lib/ai/redact.ts"]
+}

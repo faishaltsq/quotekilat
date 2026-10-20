@@ -93,10 +93,20 @@ Angka 10–15 digit tanpa separator **sengaja dibiarkan** karena hampir selalu h
 | Lapisan | Berkas |
 |---|---|
 | DB | `supabase/migrations/0003_phase3_ai_quota.sql`, `supabase/tests/phase3_ai_quota.sql` |
-| Server | `api/ai/parse.ts`, `api/_lib/{provider,supabase,net}.ts` |
+| Server | `server/ai/parse.ts`, `server/_lib/{provider,supabase,net}.ts`, entry `api/ai/parse.js` |
 | Klien | `src/lib/ai/{schema,redact,diff,client,flag}.ts` |
 | UI | `src/components/ai/SmartInputPanel.tsx`, `smart-input.css` |
-| Konfig | `.env.server.example`, `.env.example`, `vercel.json`, `tsconfig.json` (`include` + `api`) |
+| Konfig | `.env.server.example`, `.env.example`, `vercel.json`, `tsconfig.json`, `tsconfig.api.json` |
+
+## Format modul fungsi (jebakan produksi)
+
+Builder Vercel mengemit fungsi sebagai **ESM**, tetapi `/var/task/package.json` yang dibuatnya tidak membawa `"type": "module"`. Node lalu memuat berkas itu sebagai CommonJS dan setiap request mati dengan `Cannot use import statement outside a module` — 500 `FUNCTION_INVOCATION_FAILED`, tanpa error saat build.
+
+Yang tidak menyelesaikan masalah: `api/package.json` (`module` maupun `commonjs`), rename ke `.mts` (ditolak sebagai function), dan `functions.includeFiles` untuk membawa `package.json` ikut terpaket.
+
+Jalan keluarnya: `server/**` dikompilasi sendiri ke CommonJS lewat `tsconfig.api.json` (`outDir: vercel-api`), lalu `api/ai/parse.js` menjadi entry tipis yang `require` hasil kompilasi itu.
+
+Entry itu juga **wajib ber-signature Node `(req, res)`**. Dengan export CommonJS, launcher tidak bisa mendeteksi Web handler, memanggilnya sebagai middleware Node, dan `Response` yang dikembalikan dibuang — gejalanya `FUNCTION_INVOCATION_TIMEOUT` (504) pada `GET` dan 500 pada `POST`. Adapter di entry membangun `Request` dari `req` (body sudah diparse platform bila JSON), memanggil handler asli, lalu menulis status/header/body ke `res`. `scripts/build-api.mjs` menjalankan `tsc` dan menulis `vercel-api/package.json` (`{"type":"commonjs"}`), dan `pnpm build` memanggilnya. Glob `functions` di `vercel.json` diarahkan ke `api/**/*.js`; ekstensi `.cjs` ditolak sebagai function (`unused_function`).
 
 ## Gate
 
@@ -104,11 +114,12 @@ Angka 10–15 digit tanpa separator **sengaja dibiarkan** karena hampir selalu h
 |---|---|
 | `pnpm typecheck` | lulus |
 | `pnpm lint` | lulus (0 warning) |
-| `NODE_ENV=test pnpm test` | **369 tes / 26 file** lulus |
+| `NODE_ENV=test pnpm test` | **375 tes / 26 file** lulus |
 | `pnpm test:sql` | **66 assertion** lulus (37 Phase 2 + 29 Phase 3) |
 | `apply-all.sql` di database kosong | diterapkan bersih, kedua suite lulus di atasnya |
-| `pnpm build` | lulus, 6.84 s |
+| `pnpm build` | lulus (+ `vercel-api/` CommonJS terbentuk) |
 | `pnpm test:e2e` | **24 lulus** (desktop + mobile) |
+| Produksi `https://quotekilat.vercel.app/api/ai/parse` | `GET` → 405 `Gunakan POST.`, `POST` tanpa token → 401 `Masuk dulu untuk memakai Smart Input.` (fungsi benar-benar termuat, bukan `FUNCTION_INVOCATION_FAILED`) |
 
 Tes Phase 3 menyentuh: redaksi PII, normalisasi angka `Rp 60.000`/`7,5`, penolakan nilai mustahil, whitelist field, mapping per mode, diff/toggle tanpa mutasi, kontrak klien (401/409/429/offline/body rusak), provider (mode mock, JSON berpagar, timeout, key tidak pernah masuk body), handler (urutan charge → provider → refund, kuota tidak dipotong saat RPC gagal, redaksi sebelum kirim), panel (tidak ada request sebelum aksi, consent wajib, tick manual, dialog auth, pesan penolakan, label mock), serta batas rahasia (tidak ada `VITE_` di `api/`, template env terpisah).
 

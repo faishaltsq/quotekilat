@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { callProvider, isConfigured, ProviderError, readProviderEnv } from '../../api/_lib/provider'
+import { callProvider, isConfigured, ProviderError, readProviderEnv } from '../../server/_lib/provider'
 
 const configured = { baseUrl: 'https://model.example/v1', apiKey: 'sk-test', model: 'test-model' }
 

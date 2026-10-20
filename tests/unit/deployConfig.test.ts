@@ -90,7 +90,7 @@ describe('deployment config', () => {
  * env template carries no AI credentials, and the server template documents them.
  */
 describe('phase 3 secret boundary', () => {
-  const serverFiles = ['api/ai/parse.ts', 'api/_lib/provider.ts', 'api/_lib/supabase.ts']
+  const serverFiles = ['server/ai/parse.ts', 'server/_lib/provider.ts', 'server/_lib/supabase.ts']
 
   it('server code never reads a VITE_ variable', () => {
     for (const file of serverFiles) {
@@ -120,6 +120,43 @@ describe('phase 3 secret boundary', () => {
   })
 
   it('the API route rejects the service-role secret key', () => {
-    expect(read('api/_lib/supabase.ts')).toContain("startsWith('sb_secret_')")
+    expect(read('server/_lib/supabase.ts')).toContain("startsWith('sb_secret_')")
+  })
+})
+
+/**
+ * The platform builder emitted ESM for the function while the generated
+ * /var/task/package.json carried no module type, so every request died with
+ * "Cannot use import statement outside a module". The route is now a committed
+ * .cjs shim over a CommonJS build, and these assertions keep it that way: the
+ * failure mode is invisible locally and only shows up as a 500 in production.
+ */
+describe('api function module format', () => {
+  const vercel = JSON.parse(read('vercel.json')) as { functions: Record<string, unknown> }
+
+  it('routes the function glob at the .cjs entry, not the TypeScript source', () => {
+    const patterns = Object.keys(vercel.functions)
+    expect(patterns).toContain('api/**/*.js')
+    expect(patterns.some((pattern) => pattern.endsWith('.ts'))).toBe(false)
+  })
+
+  it('the entry file is CommonJS and requires the compiled build', () => {
+    const entry = read('api/ai/parse.js')
+    expect(entry).toContain("require('../../vercel-api/server/ai/parse.js')")
+    expect(entry).toContain('module.exports')
+    expect(entry).not.toMatch(/^import /m)
+  })
+
+  it('the api tsconfig emits CommonJS outside the app build', () => {
+    const apiTs = read('tsconfig.api.json')
+    expect(apiTs).toContain('"module": "commonjs"')
+    expect(apiTs).toContain('"outDir": "vercel-api"')
+    expect(apiTs).not.toContain('"noEmit": true')
+  })
+
+  it('the build marks the emitted tree as CommonJS and runs before deploy', () => {
+    const script = read('scripts/build-api.mjs')
+    expect(script).toContain("type: 'commonjs'")
+    expect(JSON.parse(read('package.json')).scripts.build).toContain('scripts/build-api.mjs')
   })
 })

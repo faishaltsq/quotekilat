@@ -30,7 +30,8 @@
   "include": [
     "src",
     "tests",
-    "api",
+    "server",
     "*.config.ts"
-  ]
+  ],
+  "exclude": ["vercel-api"]
 }
