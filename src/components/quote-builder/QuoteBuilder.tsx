@@ -12,6 +12,8 @@ import { clearTabDraft, loadTabDraft, saveTabDraft } from '../../lib/storage/tab
 import { AdvancedFields, CustomerFields, ModeFields } from './QuoteFields'
 import { PricingSummary } from './PricingSummary'
 import { QuotePreview } from './QuotePreview'
+import { CloudSavePanel } from '../cloud/CloudSavePanel'
+import type { SaveQuoteSource } from '../../lib/cloud/quoteMapping'
 import './quote-builder.css'
 
 const modes = [{ value: 'goods', label: 'Barang', icon: Package }, { value: 'service', label: 'Jasa', icon: Wrench }, { value: 'custom', label: 'Custom', icon: Scissors }] as const
@@ -82,6 +84,18 @@ export function QuoteBuilder() {
     setNotice(removed ? 'Draft lokal dan detail di formulir telah dihapus.' : 'Formulir dikosongkan, tetapi penghapusan penyimpanan diblokir browser.')
   }
   const errors = calculation.errors
+  const cloudSource: SaveQuoteSource | null = calculation.result
+    ? {
+        details: {
+          title: (values.mode === 'goods' ? values.goodsTitle : values.mode === 'service' ? values.serviceTitle : values.customTitle).trim(),
+          customerName: values.customerName.trim(),
+        },
+        mode: values.mode,
+        quantity: values.mode === 'service' ? 1 : Number(values.mode === 'custom' ? values.customQuantity : values.quantity),
+        targetMarginBps: Math.round((Number(values.marginPercent.replace(',', '.')) || 0) * 100),
+        pricing: calculation.result,
+      }
+    : null
   return <section className="quote-builder" id="quote-builder" aria-labelledby="builder-title" tabIndex={-1}>
     <div className="builder-topline"><div><span className="eyebrow">RUANG HITUNG ANDA</span><h2 id="builder-title">Mulai dari angka yang tepat.</h2></div><span className="local-badge"><ShieldCheck size={13} /> Privat & lokal</span></div>
     <FormProvider {...form}><form noValidate onSubmit={(event) => { void form.handleSubmit(() => setPreview(getSnapshot()))(event) }} onChangeCapture={markEdited}>
@@ -102,6 +116,7 @@ export function QuoteBuilder() {
     </form></FormProvider>
     <div className="draft-controls"><span role="status"><HardDrive size={13} />{storageStatus}</span><button className="text-button" onClick={clear}>Hapus data perangkat</button></div>
     <details className="storage-privacy"><summary>Tentang privasi draft</summary><p>Angka biaya, nama item, dan pengaturan disimpan di browser ini setelah Anda mengedit. Nama usaha, pelanggan, dan catatan hanya disimpan jika Anda memilihnya. Tidak ada pengiriman data ke server. Draft hilang saat data browser dihapus. <a href="/privacy">Kebijakan privasi (draf)</a>.</p></details>
+    <CloudSavePanel source={cloudSource} disabledReason="Lengkapi input agar penawaran bisa dihitung." />
     <div className="inline-ai"><Sparkles size={15} /><span>Smart Input</span><span className="soon-label">Segera hadir · belum aktif</span></div>
     {notice && <p className="action-notice" role="status">{notice}</p>}
     <QuotePreview quote={preview} onClose={() => setPreview(null)} onReturnFocus={() => previewTriggerRef.current?.focus()} onCopy={() => { void copy(preview) }} onPdf={() => { void pdf(preview) }} busy={busy} />

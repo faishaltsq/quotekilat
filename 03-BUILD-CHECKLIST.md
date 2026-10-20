@@ -21,13 +21,17 @@ Check boxes only after actual implementation and verification. Do not mark futur
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass or genuine blocker documented.
 - [x] README for local run, controls and architecture, `.env.example`, summary with limitations.
 
-## Phase 2 — cloud account, explicitly requested later
-- [ ] Auth only on cloud-dependent actions; restore guest draft after return.
-- [ ] SQL migrations with restricted grants, RLS, indexed owner columns.
-- [ ] Cloud save, list, edit, duplicate, delete; authenticated account-only.
-- [ ] Atomic server-enforced Free monthly saved-quote quota.
-- [ ] User A cannot read/write User B quote in tests.
-- [ ] Logout preserves expected local guest UX and does not leak another user data.
+## Phase 2 — cloud account (code complete; no live project yet)
+- [x] Auth only on cloud-dependent actions; the dialog opens on "Simpan ke cloud" and never on page load.
+- [x] Guest draft is untouched by auth — nothing clears `localStorage` on sign-in or sign-out.
+- [x] SQL migrations with restricted grants, RLS, indexed owner columns.
+- [x] Atomic server-enforced Free monthly saved-quote quota (5/month, UTC).
+- [x] User A cannot read/write User B quote — 37 SQL assertions against real Postgres.
+- [x] Logout clears only the session; guest UX and local draft stay intact.
+- [x] Cloud save and list, plus status edit on whitelisted columns only.
+- [ ] Cloud duplicate and hard delete — deliberately not granted; the UI states this.
+- [ ] Verified against a live Supabase project — provisioning blocked (free-tier project
+      limit reached on the account the MCP is authorised for; needs a different account).
 
 ## Phase 3 — AI beta, explicitly requested later
 - [ ] Configurable server model adapter, secret server-side only.

@@ -19,7 +19,8 @@
 | `NODE_ENV=development pnpm install --frozen-lockfile --offline` | Lulus; lockfile konsisten, devDependencies tersedia |
 | `pnpm typecheck` | Lulus |
 | `pnpm lint` | Lulus, 0 error |
-| `pnpm test` | **225 tes lulus, 12 file** |
+| `pnpm test` | **290 tes lulus, 19 file** |
+| `pnpm test:sql` | **37 assertion RLS/grant/kuota lulus** di `postgres:16-alpine` |
 | `pnpm build` | Lulus, produksi statis di `dist/` |
 | `pnpm test:e2e` | **24 tes lulus**, Chromium desktop + emulasi mobile |
 | `pnpm audit --prod` | Tidak ditemukan kerentanan yang diketahui |
@@ -44,12 +45,17 @@ Screenshot:
 - Chunk PDF sekitar 1,13 MB minified / 506 KB gzip memicu pemberitahuan ukuran bundle. Chunk dan font TTF 569 KB diunduh hanya saat ekspor; JS awal sekitar 485 KB / 151 KB gzip. Bukan blocker build.
 - Tanggal quotation menggunakan UTC, dilabeli konsisten di preview/WhatsApp/PDF. PDF generik berbasis teks, tanpa logo dan branding Pro.
 - localStorage tidak terenkripsi, tidak menyinkronkan antar-tab/perangkat; hapus data browser menghilangkan draft. Browser memerlukan JavaScript; belum offline PWA.
-- File `_headers` berlaku saat disajikan oleh Cloudflare Pages; preview Vite tidak menerapkan header hosting tersebut. Belum ada deployment atau verifikasi header produksi.
-- Folder awal dan akhir bukan repository Git. Tidak ada commit/push/branch/deployment yang dibuat.
+- `public/_headers` hanya berlaku di Cloudflare Pages; Vercel memakai `vercel.json`. Preview Vite tidak menerapkan header hosting mana pun, sehingga kesalahan CSP hanya terlihat di produksi. `tests/unit/deployConfig.test.ts` menjaga CSP tetap mengizinkan `*.supabase.co`, `wss://*.supabase.co`, dan `data:` untuk font.
+- Repo: https://github.com/faishaltsq/quotekilat (`master`), terhubung ke Vercel sehingga push memicu deploy.
 - Dependencies terkunci dengan pnpm; resolver v5 dipilih karena resolver v6 menimbulkan konflik optional peers pada npm. TypeScript 6.0.3 mengikuti dukungan typescript-eslint; script test/dev mengatur NODE_ENV eksplisit agar shell production tidak memuat React production dalam tes komponen.
 
-## Pending — di luar Phase 1
-- **Phase 2:** Supabase Auth, cloud save/history, guest import, RLS dan kuota server atomik.
+## Phase 2 — cloud workspace (kode selesai, belum ada project live)
+- Auth Supabase hanya diminta saat aksi yang memang butuh cloud; halaman tidak pernah memasang auth wall.
+- Migrasi `0001`/`0002` + gate `pnpm test:sql` (37 assertion) membuktikan RLS, grant sempit, FK lintas-tenant, dan kuota atomik 5/bulan.
+- **Blocker:** pembuatan project Supabase gagal — akun yang terhubung ke MCP sudah memakai 2 slot project gratis. Perlu akun Supabase lain atau project lain di-pause.
+- Detail: `docs/PHASE-2-CLOUD.md`.
+
+## Pending — di luar Phase 2
 - **Phase 3:** AI opt-in terstruktur, quota/cost controls, sumber pasar yang dapat diverifikasi, dan fallback data tidak cukup.
 - **Phase 4:** Midtrans sandbox, webhook terverifikasi/idempotent dan lifecycle akses berbayar. Tidak ada penagihan nyata.
 - **Phase 5:** validasi pengguna, retensi, willingness-to-pay dan observability berbasis consent.
