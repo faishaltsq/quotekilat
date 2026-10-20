@@ -1,0 +1,20 @@
+# Copy appropriate values into .env.local ONLY after relevant phase; never commit actual secrets.
+# Phase 1 needs no environment variables.
+
+# Phase 2 — public client config (publishable keys ONLY)
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+
+# Phase 2/3/4 — server-side secrets (configure Cloudflare environment, NEVER VITE_ prefix)
+SUPABASE_SERVICE_ROLE_KEY=
+AI_PROVIDER=
+AI_API_KEY=
+SEARCH_API_KEY=
+MIDTRANS_SERVER_KEY=
+MIDTRANS_ENV=sandbox
+
+# Feature flags default disabled until the implementation and security tests pass.
+VITE_FEATURE_CLOUD=false
+VITE_FEATURE_AI_PARSE=false
+VITE_FEATURE_MARKET_RESEARCH=false
+VITE_FEATURE_BILLING=false
