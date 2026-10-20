@@ -7,7 +7,10 @@ describe('translateAuthError', () => {
     ['Email not confirmed', 'Konfirmasi email Anda dulu lewat tautan yang dikirim.'],
     ['User already registered', 'Email ini sudah terdaftar. Masuk saja.'],
     ['Password should be at least 6 characters', 'Kata sandi minimal 8 karakter.'],
-    ['email rate limit exceeded', 'Terlalu banyak percobaan. Tunggu sebentar.'],
+    ['email rate limit exceeded', 'Email konfirmasi tidak terkirim: batas pengiriman project tercapai. Coba lagi nanti.'],
+    ['over_email_send_rate_limit', 'Email konfirmasi tidak terkirim: batas pengiriman project tercapai. Coba lagi nanti.'],
+    ['Request rate limit reached', 'Terlalu banyak percobaan. Tunggu sebentar.'],
+    ['Email address "qa@example.com" is invalid', 'Format email tidak valid.'],
     ['Unable to validate email address: invalid format', 'Format email tidak valid.'],
   ])('%s -> %s', (input, expected) => {
     expect(translateAuthError(input)).toBe(expected)

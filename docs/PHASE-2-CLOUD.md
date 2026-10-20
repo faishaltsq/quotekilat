@@ -68,6 +68,50 @@ are not applied by the Vite preview server, so a CSP regression is invisible
 locally and only appears in production — that is exactly how the inlined-font
 block reached the live site in Phase 1.
 
+## Live project
+
+Ref `xirgtbnvthgjrvgnfrsg` (`https://xirgtbnvthgjrvgnfrsg.supabase.co`), region
+ap-southeast-1. Migrasi diterapkan lewat `supabase/apply-all.sql` di dashboard SQL
+editor karena project ini ada di akun Supabase yang berbeda dari MCP (organisasi
+`lvbbubaqbzajqjdjaxgi` hanya memuat 4 project lain).
+
+Postur yang diverifikasi dari luar, memakai publishable key saja:
+
+| Probe | Hasil | Arti |
+|---|---|---|
+| `GET /rest/v1/quotes` | `42501 permission denied` | tabel ada, `anon` tidak punya grant |
+| `POST /rest/v1/quotes` | `42501` | kuota tidak bisa dilewati lewat insert langsung |
+| `PATCH`/`DELETE /rest/v1/quotes` | `42501` | tulis langsung tertutup |
+| `POST /rpc/save_quote` (11 argumen) | `42501 permission denied for function` | fungsi ada, tidak dieksekusi `anon` |
+| `POST /rpc/remaining_quota` | `42501` | idem |
+| `POST /rpc/free_quote_limit` | `42501` | idem |
+
+`save_quote` yang dipanggil tanpa argumen membalas `PGRST202`; itu bukan bukti
+fungsi tidak ada, hanya PostgREST gagal mencocokkan signature. Pemanggilan dengan
+11 parameter membalas `42501`, artinya fungsi ada dan tertutup untuk `anon`.
+
+## Blocker konfigurasi auth (belum diperbaiki)
+
+`GET /auth/v1/settings` → `mailer_autoconfirm: false`, `disable_signup: false`,
+provider `email`.
+
+Artinya signup mengirim email konfirmasi lewat SMTP bawaan Supabase. SMTP bawaan
+terbatas keras: percobaan signup nyata dibalas
+`429 over_email_send_rate_limit`. Pengguna yang mengklik "Daftar" tidak akan
+menerima tautan, dan `signInWithPassword` sebelum konfirmasi gagal.
+
+Dua jalan keluar, keduanya di dashboard project:
+
+1. **Matikan konfirmasi email** (Authentication → Providers → Email → Confirm
+   email off). Paling cepat untuk MVP gratis; risikonya siapa pun bisa mendaftar
+   dengan alamat palsu. RLS dan kuota tetap membatasi apa yang bisa mereka lihat.
+2. **Pasang SMTP sendiri** (Resend/Brevo/Postmark). Wajib sebelum ada pengguna
+   berbayar, karena SMTP bawaan bukan untuk produksi.
+
+Kode sudah menangani kedua keadaan: `translateAuthError` membedakan batas
+pengiriman email dari kesalahan pengguna, dan `NOT_PROVISIONED` membedakan skema
+belum ada dari gangguan jaringan.
+
 ## Enabling cloud in a deployment
 
 1. Create the Supabase project.
