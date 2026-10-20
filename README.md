@@ -61,8 +61,16 @@ Cloud, auth, riwayat online, AI, Pro/billing dan pembayaran **belum diimplementa
 - `src/components/landing`, `src/app`: konten landing, parallax dan routing legal.
 - `tests/unit`, `tests/components`, `tests/e2e`: matematika, privasi, PDF dan perjalanan tamu.
 
-## Hosting (belum dideploy)
+## Hosting
 
-Hasil `pnpm build` ada di `dist/` dan kompatibel dengan hosting statis Cloudflare Pages. `_redirects` menyediakan fallback SPA; `_headers` menambahkan CSP dan header dasar pada Cloudflare. Header ini tidak otomatis diterapkan server preview Vite. Tidak ada Functions atau biaya layanan yang diaktifkan.
+**Live:** https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat
+
+Vercel, framework Vite, output `dist/`. `vercel.json` memuat rewrite SPA ke `/index.html`, CSP dan header keamanan, serta cache immutable untuk `/assets/*`. `installCommand` memakai `NODE_ENV=development` agar devDependencies (termasuk TypeScript) tersedia saat build.
+
+CSP mengizinkan `font-src 'self' data:` karena Vite meng-inline subset woff2 kecil sebagai `data:` URL. Tanpa `data:`, font diblokir **hanya di produksi** — server preview Vite tidak mengirim header hosting, jadi masalah ini tidak terlihat secara lokal.
+
+`public/_headers` dan `public/_redirects` dipertahankan sebagai alternatif Cloudflare Pages; Vercel memakai `vercel.json`. `_headers` tidak diterapkan server preview Vite.
+
+Deploy ulang: `vercel deploy --prod --yes`. Repo terhubung ke proyek Vercel, sehingga push ke `master` juga memicu build.
 
 Lihat `IMPLEMENTATION_STATUS.md` untuk bukti verifikasi dan `DECISIONS.md` untuk tradeoff.

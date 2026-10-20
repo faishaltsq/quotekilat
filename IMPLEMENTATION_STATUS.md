@@ -1,7 +1,7 @@
 # Status Implementasi QuoteKilat
 
 ## Hasil
-**Phase 1 guest MVP selesai dan terverifikasi secara lokal.** Build aplikasi ada di `dist/`. Preview lokal: http://127.0.0.1:4173/ . Tidak ada deployment produksi, akun layanan eksternal, database, AI, billing atau pembayaran aktif.
+**Phase 1 guest MVP selesai, terverifikasi lokal, dan live di produksi.** Live: https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat . Build statis di `dist/`. Tidak ada database, AI, billing atau pembayaran aktif.
 
 ## Fitur yang berfungsi
 - Landing responsif dengan builder nyata di hero, Barang/Jasa/Custom, contoh berlabel, input dinamis, dan state biaya/jumlah independen antar-mode.
@@ -24,6 +24,8 @@
 | `pnpm test:e2e` | **24 tes lulus**, Chromium desktop + emulasi mobile |
 | `pnpm audit --prod` | Tidak ditemukan kerentanan yang diketahui |
 | HTTP preview `/` | 200, title QuoteKilat sesuai |
+| **Produksi** `https://quotekilat.vercel.app` | `/`, `/privacy`, `/terms`, `/pricing`, rute tak dikenal → 200; CSP, HSTS, nosniff, Referrer-Policy, Permissions-Policy aktif; `/assets/*` cache immutable |
+| **Smoke produksi (Chromium)** | Font termuat, harga `Rp 250.000` (qty 1) → `Rp 750.000` (qty 3), dialog preview terbuka dengan total sama, tombol PDF aktif, mobile tanpa overflow, **0 console error, 0 request eksternal** |
 | Screenshot desktop/mobile | Disimpan dan ditinjau visual |
 
 E2E mencakup perhitungan fee/diskon, independensi mode, invalid input, keyboard tab, return focus modal, clipboard asli dan fallback, **unduhan PDF aktual beserta ekstraksi teks dan total yang sama dengan layar**, reload/navigasi, opt-in privasi, clear tanpa resurrection, storage failure, teks HTML tidak dieksekusi, tidak ada request API/third-party, dan routing publik. Axe scan landing/preview desktop/mobile: tidak ada pelanggaran otomatis pada aturan WCAG A/AA yang diuji. Viewport 360/390/430/768/1280px tidak overflow horizontal; reduced motion secara eksplisit memverifikasi transform dekoratif `none`.
