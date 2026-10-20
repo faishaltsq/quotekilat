@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { handleParse, hashIp, type ParseDeps } from '../../api/ai/parse-quote'
+import { handleParse, hashIp, type ParseDeps } from '../../api/ai/parse'
 
 const KEY = 'aaaaaaaa-0000-0000-0000-000000000001'
 const config = { url: 'https://abcd.supabase.co', key: 'sb_publishable_test' }

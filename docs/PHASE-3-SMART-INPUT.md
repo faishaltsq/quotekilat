@@ -93,7 +93,7 @@ Angka 10–15 digit tanpa separator **sengaja dibiarkan** karena hampir selalu h
 | Lapisan | Berkas |
 |---|---|
 | DB | `supabase/migrations/0003_phase3_ai_quota.sql`, `supabase/tests/phase3_ai_quota.sql` |
-| Server | `api/ai/parse-quote.ts`, `api/_lib/{provider,supabase,net}.ts` |
+| Server | `api/ai/parse.ts`, `api/_lib/{provider,supabase,net}.ts` |
 | Klien | `src/lib/ai/{schema,redact,diff,client,flag}.ts` |
 | UI | `src/components/ai/SmartInputPanel.tsx`, `smart-input.css` |
 | Konfig | `.env.server.example`, `.env.example`, `vercel.json`, `tsconfig.json` (`include` + `api`) |

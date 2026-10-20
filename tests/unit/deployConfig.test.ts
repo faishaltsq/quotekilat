@@ -65,6 +65,20 @@ describe('deployment config', () => {
     expect(JSON.stringify(vercel.rewrites)).toContain('/index.html')
   })
 
+  it('leaves /api/* to the functions instead of the SPA fallback', () => {
+    // A POST to a rewritten path answers 405, so a rewrite covering /api would
+    // swallow the Smart Input endpoint and look like a provider outage.
+    const source = String((vercel.rewrites as { source: string }[])[0].source)
+    expect(source).toContain('(?!api/)')
+    const pattern = new RegExp(`^${source}$`)
+    expect(pattern.test('/api/ai/parse')).toBe(false)
+    expect(pattern.test('/pricing')).toBe(true)
+  })
+
+  it('gives the AI route room to fail and refund before the platform kills it', () => {
+    expect(JSON.stringify(vercel.functions)).toContain('maxDuration')
+  })
+
   it('caches hashed assets immutably', () => {
     expect(JSON.stringify(vercel.headers)).toContain('immutable')
   })
@@ -76,7 +90,7 @@ describe('deployment config', () => {
  * env template carries no AI credentials, and the server template documents them.
  */
 describe('phase 3 secret boundary', () => {
-  const serverFiles = ['api/ai/parse-quote.ts', 'api/_lib/provider.ts', 'api/_lib/supabase.ts']
+  const serverFiles = ['api/ai/parse.ts', 'api/_lib/provider.ts', 'api/_lib/supabase.ts']
 
   it('server code never reads a VITE_ variable', () => {
     for (const file of serverFiles) {

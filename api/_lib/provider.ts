@@ -119,7 +119,9 @@ export async function callProvider(
           { role: 'user', content: text },
         ],
       }),
-      signal: timeoutSignal(20_000),
+      // Must stay well under the function's maxDuration: a platform kill would
+      // return before the handler can refund the spent parse.
+      signal: timeoutSignal(12_000),
     })
   } catch (error) {
     const timeout = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
