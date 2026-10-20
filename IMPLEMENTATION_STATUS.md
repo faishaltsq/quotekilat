@@ -19,7 +19,7 @@
 | `NODE_ENV=development pnpm install --frozen-lockfile --offline` | Lulus; lockfile konsisten, devDependencies tersedia |
 | `pnpm typecheck` | Lulus |
 | `pnpm lint` | Lulus, 0 error |
-| `pnpm test` | **290 tes lulus, 19 file** |
+| `pnpm test` | **294 tes lulus, 19 file** |
 | `pnpm test:sql` | **37 assertion RLS/grant/kuota lulus** di `postgres:16-alpine` |
 | `pnpm build` | Lulus, produksi statis di `dist/` |
 | `pnpm test:e2e` | **24 tes lulus**, Chromium desktop + emulasi mobile |
@@ -49,10 +49,13 @@ Screenshot:
 - Repo: https://github.com/faishaltsq/quotekilat (`master`), terhubung ke Vercel sehingga push memicu deploy.
 - Dependencies terkunci dengan pnpm; resolver v5 dipilih karena resolver v6 menimbulkan konflik optional peers pada npm. TypeScript 6.0.3 mengikuti dukungan typescript-eslint; script test/dev mengatur NODE_ENV eksplisit agar shell production tidak memuat React production dalam tes komponen.
 
-## Phase 2 — cloud workspace (kode selesai, belum ada project live)
-- Auth Supabase hanya diminta saat aksi yang memang butuh cloud; halaman tidak pernah memasang auth wall.
+## Phase 2 — cloud workspace (live, satu blocker konfigurasi auth)
+- Project Supabase: `xirgtbnvthgjrvgnfrsg` (akun terpisah dari MCP). Migrasi diterapkan lewat `supabase/apply-all.sql`.
+- Env Vercel Production: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Tidak ada secret key di bundle atau repo (diverifikasi dengan grep, bukan diasumsikan).
+- Auth Supabase hanya diminta saat aksi yang memang butuh cloud; halaman tidak pernah memasang auth wall. Nol request ke Supabase sebelum pengguna berinteraksi.
 - Migrasi `0001`/`0002` + gate `pnpm test:sql` (37 assertion) membuktikan RLS, grant sempit, FK lintas-tenant, dan kuota atomik 5/bulan.
-- **Blocker:** pembuatan project Supabase gagal — akun yang terhubung ke MCP sudah memakai 2 slot project gratis. Perlu akun Supabase lain atau project lain di-pause.
+- Permukaan `anon` diuji langsung ke project live: `SELECT`/`INSERT`/`PATCH`/`DELETE` pada `quotes` dan semua RPC dibalas `42501 permission denied`.
+- **Blocker:** `mailer_autoconfirm: false` + SMTP bawaan Supabase → signup nyata dibalas `429 over_email_send_rate_limit`. Perlu matikan konfirmasi email atau pasang SMTP sendiri di dashboard.
 - Detail: `docs/PHASE-2-CLOUD.md`.
 
 ## Pending — di luar Phase 2
