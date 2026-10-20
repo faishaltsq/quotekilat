@@ -90,27 +90,53 @@ Postur yang diverifikasi dari luar, memakai publishable key saja:
 fungsi tidak ada, hanya PostgREST gagal mencocokkan signature. Pemanggilan dengan
 11 parameter membalas `42501`, artinya fungsi ada dan tertutup untuk `anon`.
 
-## Blocker konfigurasi auth (belum diperbaiki)
+## Konfigurasi auth (diselesaikan)
 
-`GET /auth/v1/settings` → `mailer_autoconfirm: false`, `disable_signup: false`,
-provider `email`.
+Awalnya `mailer_autoconfirm: false`, sehingga signup mengirim email konfirmasi
+lewat SMTP bawaan Supabase. SMTP bawaan berbatas keras (2 email/jam), dan
+percobaan signup nyata dibalas `429 over_email_send_rate_limit` — pengguna tidak
+pernah menerima tautan, dan login sebelum konfirmasi gagal.
 
-Artinya signup mengirim email konfirmasi lewat SMTP bawaan Supabase. SMTP bawaan
-terbatas keras: percobaan signup nyata dibalas
-`429 over_email_send_rate_limit`. Pengguna yang mengklik "Daftar" tidak akan
-menerima tautan, dan `signInWithPassword` sebelum konfirmasi gagal.
+Sekarang dimatikan: `mailer_autoconfirm: true`, `disable_signup: false`,
+provider `email`. Lokasinya **bukan** di drawer provider Email, melainkan di
+kartu **User Signups** pada halaman Authentication → Sign In / Providers, lalu
+**Save changes**.
 
-Dua jalan keluar, keduanya di dashboard project:
+Konsekuensi yang diterima: alamat email tidak diverifikasi. RLS dan kuota tetap
+membatasi apa yang bisa dicapai akun mana pun, jadi risiko terburuknya adalah
+baris `profiles` untuk alamat palsu — bukan akses ke data tenant lain.
 
-1. **Matikan konfirmasi email** (Authentication → Providers → Email → Confirm
-   email off). Paling cepat untuk MVP gratis; risikonya siapa pun bisa mendaftar
-   dengan alamat palsu. RLS dan kuota tetap membatasi apa yang bisa mereka lihat.
-2. **Pasang SMTP sendiri** (Resend/Brevo/Postmark). Wajib sebelum ada pengguna
-   berbayar, karena SMTP bawaan bukan untuk produksi.
+Ini cukup untuk MVP gratis, **belum** cukup untuk produksi berbayar: begitu ada
+alur reset kata sandi atau email transaksional, pasang SMTP sendiri
+(Resend/Brevo/Postmark) dan nyalakan kembali konfirmasi email.
 
-Kode sudah menangani kedua keadaan: `translateAuthError` membedakan batas
-pengiriman email dari kesalahan pengguna, dan `NOT_PROVISIONED` membedakan skema
-belum ada dari gangguan jaringan.
+Kode menangani kedua keadaan: `translateAuthError` membedakan batas pengiriman
+email dari kesalahan pengguna, dan `NOT_PROVISIONED` membedakan skema belum ada
+dari gangguan jaringan.
+
+## Verifikasi end-to-end ke project live
+
+Dijalankan dengan Chromium terhadap `https://quotekilat.vercel.app` dan project
+`xirgtbnvthgjrvgnfrsg`, memakai dua akun uji nyata (tenant A dan B).
+
+| Langkah | Hasil |
+|---|---|
+| Daftar lewat UI | HTTP 200, dialog tertutup, `email_confirmed_at` terisi otomatis |
+| Trigger `profiles` | baris `display_name = QA QuoteKilat` dibuat saat signup |
+| Simpan ke cloud | "Penawaran tersimpan di cloud.", riwayat 1 baris |
+| Simpan ke-2..5 | sukses, `usage_counters.count` naik ke 5 |
+| Simpan ke-6 | ditolak: "Kuota gratis 5 penawaran bulan ini sudah habis." |
+| `remaining_quota` setelah 5 simpan | `0` |
+| Reload halaman | sesi bertahan (`quotekilat:auth:v1` di localStorage), riwayat tetap 5 |
+| Tenant B daftar | `remaining_quota` = `5` (counter terpisah), `quotes` = `[]` |
+| Tenant B simpan 1 | `remaining_quota` = `4`, `quotes` = 1 baris milik B |
+| Riwayat tenant B | 1 baris — nol baris tenant A terlihat |
+| `POST /rest/v1/quotes` langsung (token A) | `403 42501 permission denied for table quotes` |
+
+Baris terakhir itu yang paling penting: kuota tidak bisa dilewati dengan menulis
+langsung ke tabel, karena `authenticated` hanya punya `select` dan `update` pada
+kolom tertentu, sementara satu-satunya jalan menulis adalah RPC `save_quote` yang
+memeriksa counter di dalam transaksi.
 
 ## Enabling cloud in a deployment
 
