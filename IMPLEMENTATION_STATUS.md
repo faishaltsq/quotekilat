@@ -60,7 +60,15 @@ Screenshot:
 - Dua akun uji tersisa di project (tenant A: 5 penawaran, tenant B: 1). Hard delete belum tersedia di app, jadi pembersihan lewat SQL Editor: `delete from auth.users where email like 'qk.qa.%@mailinator.com';` (cascade ke `quotes`/`usage_counters`/`profiles`).
 - Detail: `docs/PHASE-2-CLOUD.md`.
 
-## Pending — di luar Phase 2
-- **Phase 3:** AI opt-in terstruktur, quota/cost controls, sumber pasar yang dapat diverifikasi, dan fallback data tidak cukup.
-- **Phase 4:** Midtrans sandbox, webhook terverifikasi/idempotent dan lifecycle akses berbayar. Tidak ada penagihan nyata.
+## Phase 3 — Smart Input (kode selesai, belum menyala di produksi)
+- Endpoint `POST /api/ai/parse` (Vercel Function) memanggil provider OpenAI-compatible dari env server. Kunci model tidak pernah berprefix `VITE_`, jadi tidak masuk bundle; tes `deployConfig` mengunci batas itu.
+- Kuota Free **2 parse/bulan** ditegakkan di fungsi SQL `begin_ai_parse`, bukan di klien. `ai_parse_log (owner_id, idempotency_key)` membuat retry tidak memotong jatah dua kali; `refund_ai_parse` mengembalikan jatah saat provider gagal atau timeout.
+- Throttle per-IP hanya menyimpan `sha256(pepper:ip)` 32 hex. PII (email, tautan, NPWP, NIK, telepon, rekening) diredaksi sebelum teks dikirim ke model.
+- Model tidak menebak: hanya 13 field whitelist, key asing dibuang, field yang tidak disebut dibiarkan kosong. Hasil tampil sebagai diff dengan checkbox; isian yang sudah diisi pengguna harus dicentang manual.
+- Panel tidak pernah di-mount tanpa `VITE_FEATURE_AI_PARSE=true`; tanpa kredensial provider endpoint menjawab mode mock berlabel "belum aktif" tanpa memotong kuota.
+- Gate: 369 tes / 26 file, 66 assertion SQL (termasuk `apply-all.sql` di database kosong), build 6.84 s, 24 E2E. Detail: `docs/PHASE-3-SMART-INPUT.md`.
+- Belum aktif karena tiga langkah manual: migrasi `0003` ke project live, env server `AI_*` di Vercel, dan flag `VITE_FEATURE_AI_PARSE=true`.
+
+## Pending — di luar Phase 3
+- **Phase 4:** Midtrans sandbox, webhook terverifikasi/idempotent, lifecycle akses berbayar, dan kuota Pro 40 parse/bulan. Tidak ada penagihan nyata.
 - **Phase 5:** validasi pengguna, retensi, willingness-to-pay dan observability berbasis consent.

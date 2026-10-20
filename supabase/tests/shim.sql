@@ -33,6 +33,7 @@ grant all on storage.buckets, storage.objects to anon, authenticated;
 -- default. Arm that here BEFORE the migration runs, otherwise every revoke
 -- assertion passes because the role never had the privilege to begin with.
 alter default privileges in schema public grant all on tables to anon, authenticated;
+alter default privileges in schema public grant execute on functions to anon, authenticated;
 grant usage on schema public to anon, authenticated;
 
 create table public.default_grant_probe (id int);

@@ -13,6 +13,8 @@ import { AdvancedFields, CustomerFields, ModeFields } from './QuoteFields'
 import { PricingSummary } from './PricingSummary'
 import { QuotePreview } from './QuotePreview'
 import { CloudSavePanel } from '../cloud/CloudSavePanel'
+import { SmartInputPanel } from '../ai/SmartInputPanel'
+import { smartInputEnabled } from '../../lib/ai/flag'
 import type { SaveQuoteSource } from '../../lib/cloud/quoteMapping'
 import './quote-builder.css'
 
@@ -117,7 +119,9 @@ export function QuoteBuilder() {
     <div className="draft-controls"><span role="status"><HardDrive size={13} />{storageStatus}</span><button className="text-button" onClick={clear}>Hapus data perangkat</button></div>
     <details className="storage-privacy"><summary>Tentang privasi draft</summary><p>Angka biaya, nama item, dan pengaturan disimpan di browser ini setelah Anda mengedit. Nama usaha, pelanggan, dan catatan hanya disimpan jika Anda memilihnya. Tidak ada pengiriman data ke server. Draft hilang saat data browser dihapus. <a href="/privacy">Kebijakan privasi (draf)</a>.</p></details>
     <CloudSavePanel source={cloudSource} disabledReason="Lengkapi input agar penawaran bisa dihitung." />
-    <div className="inline-ai"><Sparkles size={15} /><span>Smart Input</span><span className="soon-label">Segera hadir · belum aktif</span></div>
+    {smartInputEnabled
+      ? <SmartInputPanel onApplied={markEdited} />
+      : <div className="inline-ai"><Sparkles size={15} /><span>Smart Input</span><span className="soon-label">Segera hadir · belum aktif</span></div>}
     {notice && <p className="action-notice" role="status">{notice}</p>}
     <QuotePreview quote={preview} onClose={() => setPreview(null)} onReturnFocus={() => previewTriggerRef.current?.focus()} onCopy={() => { void copy(preview) }} onPdf={() => { void pdf(preview) }} busy={busy} />
     <Dialog.Root open={!!fallback} onOpenChange={(open) => { if (!open) setFallback('') }}><Dialog.Portal><Dialog.Overlay className="dialog-overlay" /><Dialog.Content className="manual-dialog" onOpenAutoFocus={(event) => { event.preventDefault(); fallbackRef.current?.focus(); fallbackRef.current?.select() }}><Dialog.Title>Salin penawaran secara manual</Dialog.Title><Dialog.Description>Pilih teks, lalu salin dengan Ctrl+C atau menu salin perangkat Anda.</Dialog.Description><textarea ref={fallbackRef} value={fallback} readOnly aria-label="Teks penawaran WhatsApp" rows={13} /><Dialog.Close className="button button-secondary">Selesai</Dialog.Close><Dialog.Close className="icon-button dialog-close" aria-label="Tutup salin manual"><X size={20} /></Dialog.Close></Dialog.Content></Dialog.Portal></Dialog.Root>

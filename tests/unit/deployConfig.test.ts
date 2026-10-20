@@ -69,3 +69,43 @@ describe('deployment config', () => {
     expect(JSON.stringify(vercel.headers)).toContain('immutable')
   })
 })
+
+/**
+ * The Smart Input route needs secrets the browser must never hold. These
+ * assertions encode that split: server code reads process.env only, the client
+ * env template carries no AI credentials, and the server template documents them.
+ */
+describe('phase 3 secret boundary', () => {
+  const serverFiles = ['api/ai/parse-quote.ts', 'api/_lib/provider.ts', 'api/_lib/supabase.ts']
+
+  it('server code never reads a VITE_ variable', () => {
+    for (const file of serverFiles) {
+      expect(read(file)).not.toMatch(/process\.env\.VITE_|import\.meta\.env/)
+    }
+  })
+
+  it('client env template carries no AI credentials', () => {
+    const example = read('.env.example')
+    expect(example).not.toContain('AI_API_KEY')
+    expect(example).not.toMatch(/AI_BASE_URL\s*=\s*\S/)
+    expect(example).toMatch(/VITE_FEATURE_AI_PARSE=false/)
+  })
+
+  it('documents the server-only variables separately and keeps them out of git ignore', () => {
+    const server = read('.env.server.example')
+    expect(server).toContain('AI_API_KEY')
+    expect(server).toContain('SUPABASE_PUBLISHABLE_KEY')
+    expect(server).not.toMatch(/^VITE_/m)
+    expect(read('.gitignore')).toContain('!.env.server.example')
+  })
+
+  it('client code never names the server model key', () => {
+    const client = read('src/lib/ai/client.ts')
+    expect(client).not.toContain('AI_API_KEY')
+    expect(client).not.toContain('AI_BASE_URL')
+  })
+
+  it('the API route rejects the service-role secret key', () => {
+    expect(read('api/_lib/supabase.ts')).toContain("startsWith('sb_secret_')")
+  })
+})
