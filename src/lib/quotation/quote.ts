@@ -1,6 +1,14 @@
 import type { PricingResult, QuoteMode } from '../pricing/types'
 import { getCustomerQuoteLines } from './presentation'
 
+const SUFFIX_PATTERN = /^[A-F0-9]{12}$/
+
+/** Random 12-char uppercase hex suffix for a new quote number. */
+export function randomQuoteSuffix(): string {
+  const random = crypto.getRandomValues(new Uint8Array(6))
+  return Array.from(random, (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase()
+}
+
 export type QuoteDetails = {
   title: string
   businessName: string
@@ -26,7 +34,12 @@ export function createQuote(
   quantity: number,
   pricing: PricingResult,
   now: Date = new Date(),
+  /** Pass a stable suffix to keep one invoice number across live re-renders. */
+  idSuffix: string = randomQuoteSuffix(),
 ): QuoteSnapshot {
+  if (!SUFFIX_PATTERN.test(idSuffix)) {
+    throw new Error('Sufiks nomor penawaran harus 12 karakter heksadesimal A–F/0–9.')
+  }
   if (!details.title.trim()) throw new Error('Nama item wajib diisi.')
   if (!Number.isInteger(details.validDays) || details.validDays < 0 || details.validDays > 365) {
     throw new Error('Masa berlaku harus berupa 0 sampai 365 hari.')
@@ -38,8 +51,6 @@ export function createQuote(
     if (!Number.isSafeInteger(value) || value < 0) throw new Error('Harga harus berupa rupiah bulat non-negatif yang aman.')
   }
   const createdAt = now.toISOString()
-  const random = crypto.getRandomValues(new Uint8Array(6))
-  const suffix = Array.from(random, (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase()
   const detailsCopy = Object.freeze({ ...details })
   const pricingCopy: PricingResult = {
     ...pricing,
@@ -48,7 +59,7 @@ export function createQuote(
   Object.freeze(pricingCopy.costLines)
   Object.freeze(pricingCopy)
   return Object.freeze({
-    id: `QK-${createdAt.slice(0, 10).replaceAll('-', '')}-${suffix}`,
+    id: `QK-${createdAt.slice(0, 10).replaceAll('-', '')}-${idSuffix}`,
     createdAt,
     details: detailsCopy,
     mode,

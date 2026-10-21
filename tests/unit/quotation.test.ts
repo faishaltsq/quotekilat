@@ -78,6 +78,20 @@ describe('quotation snapshot', () => {
     expect(Object.isFrozen(quote.pricing.costLines)).toBe(true)
     expect(Object.isFrozen(quote.pricing.costLines[0])).toBe(true)
   })
+
+  it('reuses a caller-supplied suffix so a live preview keeps one invoice number', () => {
+    const now = new Date('2026-10-20T16:45:00.000Z')
+    const first = createQuote(details, 'goods', 3, pricing, now, 'ABCDEF123456')
+    const second = createQuote({ ...details, title: 'Cetak katalog v2' }, 'goods', 3, pricing, now, 'ABCDEF123456')
+    expect(first.id).toBe('QK-20261020-ABCDEF123456')
+    expect(second.id).toBe(first.id)
+  })
+
+  it('rejects a malformed suffix instead of minting a fake quote number', () => {
+    const now = new Date('2026-10-20T16:45:00.000Z')
+    expect(() => createQuote(details, 'goods', 3, pricing, now, 'nope')).toThrow(/Sufiks/)
+    expect(() => createQuote(details, 'goods', 3, pricing, now, 'abcdef123456')).toThrow(/Sufiks/)
+  })
 })
 
 describe('WhatsApp quotation', () => {
