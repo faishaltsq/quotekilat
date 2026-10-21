@@ -115,7 +115,7 @@ export function QuoteBuilder() {
       <PricingSummary result={calculation.result} error={calculation.error} quantity={values.mode === 'service' ? 1 : Number(values.mode === 'custom' ? values.customQuantity : values.quantity)} />
       <div className="builder-actions"><button ref={previewTriggerRef} type="submit" className="button button-primary" disabled={!calculation.result}><FileText size={17} /> Buat Penawaran <ArrowUpRight size={16} /></button><button type="button" className="button button-secondary export-icon" aria-label="Salin WhatsApp" title="Salin teks WhatsApp" disabled={!calculation.result} onClick={() => { void copy(getSnapshot()) }}><MessageCircle size={20} /></button><button type="button" className="button button-secondary export-icon" aria-label={busy ? 'Membuat PDF' : 'Unduh PDF'} title="Unduh PDF" disabled={!calculation.result || busy} onClick={() => { void pdf(getSnapshot()) }}><Download size={19} /></button></div>
       <div className="builder-reassurance"><Check size={12} /> Tanpa login <span>·</span> Gratis digunakan <span>·</span> Tanpa kirim data</div>
-    </form></FormProvider>
+    </form>
     <div className="draft-controls"><span role="status"><HardDrive size={13} />{storageStatus}</span><button className="text-button" onClick={clear}>Hapus data perangkat</button></div>
     <details className="storage-privacy"><summary>Tentang privasi draft</summary><p>Angka biaya, nama item, dan pengaturan disimpan di browser ini setelah Anda mengedit. Nama usaha, pelanggan, dan catatan hanya disimpan jika Anda memilihnya. Tidak ada pengiriman data ke server. Draft hilang saat data browser dihapus. <a href="/privacy">Kebijakan privasi (draf)</a>.</p></details>
     <CloudSavePanel source={cloudSource} disabledReason="Lengkapi input agar penawaran bisa dihitung." />
@@ -123,6 +123,7 @@ export function QuoteBuilder() {
       ? <SmartInputPanel onApplied={markEdited} />
       : <div className="inline-ai"><Sparkles size={15} /><span>Smart Input</span><span className="soon-label">Segera hadir · belum aktif</span></div>}
     {notice && <p className="action-notice" role="status">{notice}</p>}
+    </FormProvider>
     <QuotePreview quote={preview} onClose={() => setPreview(null)} onReturnFocus={() => previewTriggerRef.current?.focus()} onCopy={() => { void copy(preview) }} onPdf={() => { void pdf(preview) }} busy={busy} />
     <Dialog.Root open={!!fallback} onOpenChange={(open) => { if (!open) setFallback('') }}><Dialog.Portal><Dialog.Overlay className="dialog-overlay" /><Dialog.Content className="manual-dialog" onOpenAutoFocus={(event) => { event.preventDefault(); fallbackRef.current?.focus(); fallbackRef.current?.select() }}><Dialog.Title>Salin penawaran secara manual</Dialog.Title><Dialog.Description>Pilih teks, lalu salin dengan Ctrl+C atau menu salin perangkat Anda.</Dialog.Description><textarea ref={fallbackRef} value={fallback} readOnly aria-label="Teks penawaran WhatsApp" rows={13} /><Dialog.Close className="button button-secondary">Selesai</Dialog.Close><Dialog.Close className="icon-button dialog-close" aria-label="Tutup salin manual"><X size={20} /></Dialog.Close></Dialog.Content></Dialog.Portal></Dialog.Root>
   </section>

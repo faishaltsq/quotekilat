@@ -114,7 +114,7 @@ Entry itu juga **wajib ber-signature Node `(req, res)`**. Dengan export CommonJS
 |---|---|
 | `pnpm typecheck` | lulus |
 | `pnpm lint` | lulus (0 warning) |
-| `NODE_ENV=test pnpm test` | **375 tes / 26 file** lulus |
+| `NODE_ENV=test pnpm test` | **376 tes / 26 file** lulus |
 | `pnpm test:sql` | **66 assertion** lulus (37 Phase 2 + 29 Phase 3) |
 | `apply-all.sql` di database kosong | diterapkan bersih, kedua suite lulus di atasnya |
 | `pnpm build` | lulus (+ `vercel-api/` CommonJS terbentuk) |
@@ -123,11 +123,21 @@ Entry itu juga **wajib ber-signature Node `(req, res)`**. Dengan export CommonJS
 
 Tes Phase 3 menyentuh: redaksi PII, normalisasi angka `Rp 60.000`/`7,5`, penolakan nilai mustahil, whitelist field, mapping per mode, diff/toggle tanpa mutasi, kontrak klien (401/409/429/offline/body rusak), provider (mode mock, JSON berpagar, timeout, key tidak pernah masuk body), handler (urutan charge → provider → refund, kuota tidak dipotong saat RPC gagal, redaksi sebelum kirim), panel (tidak ada request sebelum aksi, consent wajib, tick manual, dialog auth, pesan penolakan, label mock), serta batas rahasia (tidak ada `VITE_` di `api/`, template env terpisah).
 
-## Yang masih harus dilakukan sebelum fitur ini menyala
+## Status produksi
 
-1. Terapkan `supabase/migrations/0003_phase3_ai_quota.sql` ke project live (`xirgtbnvthgjrvgnfrsg`) lewat SQL Editor — akun MCP tidak punya akses ke project ini, jadi tidak bisa dijalankan dari sesi ini.
-2. Set env server di Vercel Production: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`, `AI_IP_PEPPER`.
-3. Set `VITE_FEATURE_AI_PARSE=true` lalu deploy ulang (flag dibaca saat build).
-4. Isi Site URL / Redirect URLs Supabase agar reset password tidak salah arah.
+Panel **sudah menyala** di `https://quotekilat.vercel.app` (smoke: `section.smart-input` terender, nol `pageerror`, `POST /api/ai/parse` → 401 kontrak auth, `GET` → 405).
 
-Tanpa langkah 1–3 panel tetap tidak tampil dan tidak ada request keluar — kondisi produksi saat ini.
+Env Vercel Production yang sudah diset: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `AI_IP_PEPPER`, `VITE_FEATURE_AI_PARSE=true`.
+
+Karena `AI_API_KEY`/`AI_BASE_URL` belum diisi, provider jalan di **mode mock**: parse mengembalikan 200 berlabel `mock: true` tanpa menyentuh kuota dan tanpa memanggil model eksternal — demo bisa dicoba pengguna yang sudah masuk, dan tidak ada biaya.
+
+### Jebakan yang pernah terjadi di sini
+
+1. ESM vs CommonJS function — lihat bagian "Format modul fungsi".
+2. Panel ter-mount **di luar** `<FormProvider>` di `QuoteBuilder` (blok smart-input ada setelah `</form></FormProvider>`), sehingga `useFormContext()` bernilai `null` dan seluruh halaman mati dengan `Cannot read properties of null (reading 'control')` begitu flag dinyalakan. Tes sebelumnya selalu jalan dengan flag mati sehingga lolos. Perbaikan: `</FormProvider>` dipindah ke setelah blok panel; regresi dijaga `QuoteBuilder.test.tsx` (file dijalankan dengan flag ter-mock menyala).
+
+### Sisa sebelum parse asli (berbayar kuota) jalan
+
+1. Terapkan `supabase/migrations/0003_phase3_ai_quota.sql` ke project live (`xirgtbnvthgjrvgnfrsg`) lewat SQL Editor — akun MCP tidak punya akses ke project ini, jadi tidak bisa dijalankan dari sesi ini. Tanpa ini `begin_ai_parse` gagal dan handler menjawab 503 `upstream` dengan jujur.
+2. Set `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` di Vercel Production, lalu deploy ulang. Tanpa ini tetap mode mock.
+3. Isi Site URL / Redirect URLs Supabase agar reset password tidak salah arah.
