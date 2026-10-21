@@ -10,6 +10,7 @@ import {
   Search,
   Send,
 } from 'lucide-react'
+import { UpgradePanel } from '../billing/UpgradePanel'
 
 const benefits = [
   { icon: Calculator, title: 'Harga lebih terukur', copy: 'Hitung dari biaya dan target margin.' },
@@ -268,7 +269,7 @@ export function PricingPlans() {
           </article>
 
           <article className="qk-plan qk-plan-future" aria-labelledby="qk-plan-pro">
-            <p className="qk-plan-status">Rencana · belum aktif</p>
+          <p className="qk-plan-status">Sandbox · uji coba</p>
             <h3 id="qk-plan-pro">Pro</h3>
             <p className="qk-plan-intro">Usulan untuk kebutuhan penawaran yang berulang.</p>
             <p className="qk-plan-price">Rp59.000</p>
@@ -279,9 +280,10 @@ export function PricingPlans() {
               <PlanFeature future>Preset dan daftar pelanggan</PlanFeature>
               <PlanFeature future>AI berkuota, setelah siap</PlanFeature>
             </ul>
-            <p className="qk-plan-unavailable">Langganan belum tersedia</p>
+            <p className="qk-plan-unavailable">Pembayaran uji coba lewat Midtrans sandbox</p>
           </article>
         </div>
+        <UpgradePanel />
         <p className="qk-pricing-footnote">
           Harga, kuota, dan fitur paket mendatang masih perlu divalidasi dan dapat berubah.
           Batas cloud yang direncanakan tidak membatasi penggunaan kalkulator lokal.

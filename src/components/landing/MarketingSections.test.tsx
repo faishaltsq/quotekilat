@@ -34,14 +34,21 @@ describe('MarketingSections', () => {
     const guest = screen.getByRole('article', { name: 'Guest' })
     expect(within(guest).getByText('Rp0')).toBeVisible()
     expect(within(guest).getByRole('link')).toHaveAttribute('href', '/#quote-builder')
-    for (const name of ['Free Account', 'Pro']) {
-      const plan = screen.getByRole('article', { name })
-      expect(within(plan).queryByRole('link')).not.toBeInTheDocument()
-      expect(within(plan).queryByRole('button')).not.toBeInTheDocument()
-      expect(within(plan).getByText('Rencana · belum aktif')).toBeVisible()
-      for (const feature of within(plan).getAllByRole('listitem')) {
-        expect(feature).toHaveTextContent('Nanti')
-      }
+    const free = screen.getByRole('article', { name: 'Free Account' })
+    expect(within(free).queryByRole('link')).not.toBeInTheDocument()
+    expect(within(free).queryByRole('button')).not.toBeInTheDocument()
+    expect(within(free).getByText('Rencana · belum aktif')).toBeVisible()
+    for (const feature of within(free).getAllByRole('listitem')) {
+      expect(feature).toHaveTextContent('Nanti')
+    }
+
+    const pro = screen.getByRole('article', { name: 'Pro' })
+    expect(within(pro).queryByRole('link')).not.toBeInTheDocument()
+    expect(within(pro).queryByRole('button')).not.toBeInTheDocument()
+    expect(within(pro).getByText('Sandbox · uji coba')).toBeVisible()
+    expect(within(pro).getByText(/Midtrans sandbox/)).toBeVisible()
+    for (const feature of within(pro).getAllByRole('listitem')) {
+      expect(feature).toHaveTextContent('Nanti')
     }
     expect(screen.getByText('Rp59.000')).toBeVisible()
     expect(within(screen.getByRole('article', { name: 'Pro' })).getByText(/usulan beta/)).toBeVisible()
