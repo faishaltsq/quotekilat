@@ -18,5 +18,5 @@ test('privacy and terms are explicit drafts and unknown paths offer a working re
   await page.goto('/not-a-page')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Halaman tidak ditemukan.')
   await page.getByRole('link', { name: 'Kembali ke kalkulator' }).click()
-  await expect(page.getByRole('button', { name: 'Buat Penawaran' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Unduh PDF' })).toBeEnabled()
 })

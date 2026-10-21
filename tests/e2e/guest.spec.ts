@@ -4,16 +4,18 @@ import { readFile } from 'node:fs/promises'
 import { PDFDocument } from 'pdf-lib'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 
-test('guest can preview, copy real WhatsApp text and download a real PDF', async ({ page, context }) => {
+test('guest sees a live invoice, copies real WhatsApp text and downloads a real PDF', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Harga yang tepat')
-  await expect(page.getByLabel('Harga jual penawaran', { exact: true })).toContainText('250.000')
-  await page.getByRole('button', { name: 'Buat Penawaran', exact: true }).click()
-  const preview = page.getByRole('dialog', { name: 'Pratinjau penawaran' })
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ruang hitung QuoteKilat')
+  const preview = page.getByRole('complementary', { name: 'Pratinjau penawaran langsung' })
   await expect(preview).toContainText('Hampers custom')
   await expect(preview).toContainText('250.000')
   await expect(preview).not.toContainText('Biaya dasar')
+  await page.getByLabel('Jumlah barang', { exact: true }).fill('3')
+  await expect(preview).toContainText('750.000')
+  await page.getByLabel('Jumlah barang', { exact: true }).fill('1')
+  await expect(preview).toContainText('250.000')
   await preview.getByRole('button', { name: 'Salin WhatsApp' }).click()
   const clipboard = await page.evaluate(() => navigator.clipboard.readText())
   expect(clipboard).toContain('Hampers custom')
@@ -38,8 +40,6 @@ test('guest can preview, copy real WhatsApp text and download a real PDF', async
   expect(text).not.toContain('175.000')
   expect(text).toContain(await preview.getByText(/^QK-/).innerText())
   await loading.destroy()
-  await page.keyboard.press('Escape')
-  await expect(page.getByRole('button', { name: 'Buat Penawaran' })).toBeFocused()
 })
 
 test('fees use gross margin and discounts reduce actual margin', async ({ page }) => {
@@ -56,7 +56,7 @@ test('fees use gross margin and discounts reduce actual margin', async ({ page }
   await expect(page.getByText('Margin di bawah target.', { exact: false })).toBeVisible()
   await page.getByLabel('Fee penjualan (%)', { exact: true }).fill('75')
   await expect(page.getByText('Margin + fee harus kurang dari 100%.')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Buat Penawaran' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Unduh PDF' })).toBeDisabled()
 })
 
 test('mode switching preserves independent costs and custom waste only affects material', async ({ page }) => {
@@ -85,6 +85,7 @@ test('invalid inputs never produce a fake price and tabs work with keyboard', as
   await expect(page.getByLabel('Biaya utama / unit', { exact: true })).toHaveAttribute('aria-invalid', 'true')
   await expect(page.getByLabel('Harga jual penawaran')).toHaveText('—')
   await expect(page.getByRole('button', { name: 'Unduh PDF', exact: true })).toBeDisabled()
+  await expect(page.getByRole('complementary', { name: 'Pratinjau penawaran langsung' })).toContainText(/Isi nama item/)
   await page.getByRole('tab', { name: 'Barang', exact: true }).focus()
   await page.keyboard.press('ArrowRight')
   await expect(page.getByRole('tab', { name: 'Jasa', exact: true })).toBeFocused()
@@ -135,9 +136,8 @@ test('blocked storage stays non-blocking and user HTML is never interpreted', as
   const title = '<img src=x onerror=alert(1)>'
   await page.getByLabel('Nama produk').fill(title)
   await expect(page.getByText('Penyimpanan tidak tersedia.', { exact: false })).toBeVisible()
-  await page.getByRole('button', { name: 'Buat Penawaran' }).click()
-  await expect(page.getByRole('dialog').getByRole('heading', { name: title, exact: true })).toBeVisible()
-  expect(await page.evaluate(() => document.querySelectorAll('[role=dialog] img').length)).toBe(0)
+  await expect(page.getByRole('complementary', { name: 'Pratinjau penawaran langsung' }).getByRole('heading', { name: title, exact: true })).toBeVisible()
+  expect(await page.evaluate(() => document.querySelectorAll('.live-paper img').length)).toBe(0)
 })
 
 test('no remote APIs, no auth gates, and unconfigured AI remains honest', async ({ page }) => {
@@ -146,17 +146,16 @@ test('no remote APIs, no auth gates, and unconfigured AI remains honest', async 
   page.on('request', (request) => requests.push(request.url()))
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/')
+  await page.getByText(/Simpan, draft & AI/).click()
   await expect(page.getByText('Smart Input', { exact: true }).first()).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Buat Penawaran' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Unduh PDF' })).toBeEnabled()
   expect(requests.filter((url) => !url.startsWith('http://127.0.0.1:4173/'))).toEqual([])
   expect(requests.filter((url) => url.includes('/api/'))).toEqual([])
   expect(errors).toEqual([])
 })
 
-test('WCAG A/AA automated scan and preview dialog have no violations', async ({ page }) => {
+test('WCAG A/AA automated scan has no violations', async ({ page }) => {
   await page.goto('/')
-  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()).violations).toEqual([])
-  await page.getByRole('button', { name: 'Buat Penawaran' }).click()
   expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()).violations).toEqual([])
 })
 
@@ -172,5 +171,5 @@ test('responsive viewports avoid horizontal scroll and reduced motion disables p
   await page.setViewportSize(testInfo.project.name === 'mobile' ? { width: 390, height: 844 } : { width: 1440, height: 1100 })
   await page.goto('/')
   await page.screenshot({ path: `test-results/quotekilat-${testInfo.project.name}.png`, fullPage: true, animations: 'disabled' })
-  await expect(page.getByRole('button', { name: 'Buat Penawaran' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Unduh PDF' })).toBeEnabled()
 })
