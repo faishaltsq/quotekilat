@@ -37,9 +37,9 @@ const privacySections: LegalSection[] = [
   },
   {
     id: 'pelacakan',
-    heading: '4. Tidak ada analitik atau integrasi aktif',
+    heading: '4. Integrasi opsional dan pelacakan',
     paragraphs: [
-      'Tidak ada analitik, piksel pemasaran, pelacak pihak ketiga, akun pengguna, API AI, API pencarian harga, sinkronisasi cloud, atau pembayaran yang diaktifkan oleh QuoteKilat pada Fase 1. Smart Input dan Market Insights ditandai belum aktif; panel contohnya bukan hasil pemrosesan data Anda.',
+      'QuoteKilat tidak memakai analitik pihak ketiga, piksel pemasaran, atau pelacak iklan. Akun dan penyimpanan cloud bersifat opsional dan hanya aktif setelah Anda masuk. Smart Input mengirim teks catatan yang sudah diredaksi ke penyedia model melalui server QuoteKilat, dan hanya berjalan setelah Anda menekan tombolnya. Harga pasar masih ditandai belum aktif. Pembayaran memakai Midtrans dan hanya berjalan setelah Anda memilih paket berbayar.',
       'localStorage digunakan untuk draf, bukan untuk iklan atau pelacakan. Kebijakan ini tidak mencakup ekstensi browser, perangkat lunak perangkat, atau layanan lain yang Anda pilih sendiri saat membagikan penawaran.',
     ],
   },
