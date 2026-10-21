@@ -19,8 +19,8 @@ export function HeroParallaxLayers() {
       if (!bounds || bounds.bottom <= 0 || bounds.top >= window.innerHeight) return
 
       const progress = Math.min(1, Math.max(0, -bounds.top / Math.max(bounds.height, 1)))
-      // Near sheet travels at most 24px; the other sheets use smaller CSS factors.
-      layers.style.setProperty('--qk-parallax', `${progress * 24}px`)
+      // Near sheet travels at most 56px; the other sheets use smaller CSS factors.
+      layers.style.setProperty('--qk-parallax', `${progress * 56}px`)
     }
 
     const queueFrame = () => {
@@ -62,7 +62,7 @@ export function HeroParallaxLayers() {
 
   return (
     <div className="qk-hero-layers" ref={layersRef} aria-hidden="true">
-      {[1, 2, 3].map((sheet) => (
+      {[1, 2, 3, 4, 5, 6].map((sheet) => (
         <svg
           className={`qk-invoice-sheet qk-invoice-sheet-${sheet}`}
           key={sheet}

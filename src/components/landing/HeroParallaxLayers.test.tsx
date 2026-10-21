@@ -25,12 +25,12 @@ function setMediaPreference(reducedMotion: boolean, mobile = false) {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('HeroParallaxLayers', () => {
-  it('keeps exactly three decorative sheets outside the accessibility tree', () => {
+  it('keeps exactly six decorative sheets outside the accessibility tree', () => {
     setMediaPreference(true)
     const { container } = render(<HeroParallaxLayers />)
     const decoration = container.querySelector('.qk-hero-layers')
     expect(decoration).toHaveAttribute('aria-hidden', 'true')
-    expect(decoration?.querySelectorAll('svg')).toHaveLength(3)
+    expect(decoration?.querySelectorAll('svg')).toHaveLength(6)
     expect(container.querySelectorAll('a, button, input')).toHaveLength(0)
   })
 
@@ -60,14 +60,14 @@ describe('HeroParallaxLayers', () => {
       () => new DOMRect(0, top, 1440, 1200),
     )
     act(() => queuedFrame?.(0))
-    expect(layers.style.getPropertyValue('--qk-parallax')).toBe('12px')
+    expect(layers.style.getPropertyValue('--qk-parallax')).toBe('28px')
 
     top = -1199
     window.dispatchEvent(new Event('scroll'))
     act(() => queuedFrame?.(0))
     const displacement = Number.parseFloat(layers.style.getPropertyValue('--qk-parallax'))
     expect(displacement).toBeGreaterThan(0)
-    expect(displacement).toBeLessThanOrEqual(24)
+    expect(displacement).toBeLessThanOrEqual(56)
 
     Object.defineProperty(queries[0], 'matches', { value: true })
     const onPreferenceChange = vi.mocked(queries[0].addEventListener).mock.calls[0][1] as () => void
