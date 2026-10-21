@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { timeoutSignal } from './net'
 import { pickFields, type AiMode } from '../../src/lib/ai/schema'
 
-export type ProviderEnv = { baseUrl?: string; apiKey?: string; model?: string }
+export type ProviderEnv = { baseUrl?: string; apiKey?: string; model?: string; reasoningEffort?: string }
 
 export type ModelPayload = {
   mode: AiMode | null
@@ -34,6 +34,7 @@ export function readProviderEnv(env: NodeJS.ProcessEnv = process.env): ProviderE
     baseUrl: env.AI_BASE_URL?.trim() || undefined,
     apiKey: env.AI_API_KEY?.trim() || undefined,
     model: env.AI_MODEL?.trim() || undefined,
+    reasoningEffort: env.AI_REASONING_EFFORT?.trim() || undefined,
   }
 }
 
@@ -112,16 +113,22 @@ export async function callProvider(
       body: JSON.stringify({
         model: env.model,
         temperature: 0,
-        max_tokens: 700,
+        // Reasoning models spend this budget on hidden reasoning tokens before
+        // emitting the JSON answer. A tight cap (700) exhausts the budget during
+        // reasoning and returns empty content with finish_reason "length".
+        max_tokens: 4000,
         response_format: { type: 'json_object' },
+        // DeepSeek-style effort knob: lower effort means far fewer reasoning
+        // tokens, which is what keeps a 1200-char parse inside the function budget.
+        ...(env.reasoningEffort ? { reasoning_effort: env.reasoningEffort } : {}),
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: text },
         ],
       }),
-      // Must stay well under the function's maxDuration: a platform kill would
-      // return before the handler can refund the spent parse.
-      signal: timeoutSignal(12_000),
+      // Must stay well under the function's maxDuration (30s in vercel.json): a
+      // platform kill would return before the handler can refund the spent parse.
+      signal: timeoutSignal(22_000),
     })
   } catch (error) {
     const timeout = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')

@@ -127,37 +127,44 @@ Tes Phase 3 menyentuh: redaksi PII, normalisasi angka `Rp 60.000`/`7,5`, penolak
 
 Panel **sudah menyala** di `https://quotekilat.vercel.app` (smoke: `section.smart-input` terender, nol `pageerror`, `POST /api/ai/parse` → 401 kontrak auth, `GET` → 405).
 
-Env Vercel Production yang sudah diset: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `AI_IP_PEPPER`, `VITE_FEATURE_AI_PARSE=true`.
+Env Vercel Production yang sudah diset: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `AI_IP_PEPPER`, `VITE_FEATURE_AI_PARSE=true`, dan sejak 21 Okt 2026 juga `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`, `AI_REASONING_EFFORT`.
 
-Karena `AI_API_KEY`/`AI_BASE_URL` belum diisi, provider jalan di **mode mock**: parse mengembalikan 200 berlabel `mock: true` tanpa menyentuh kuota dan tanpa memanggil model eksternal — demo bisa dicoba pengguna yang sudah masuk, dan tidak ada biaya.
+Provider aktif: **DeepSeek langsung** — `AI_BASE_URL=https://api.deepseek.com/v1`, `AI_MODEL=deepseek-flash`, `AI_REASONING_EFFORT=low`.
+
+Parse nyata terverifikasi end-to-end di produksi dengan akun uji:
+
+| Uji | Hasil |
+| --- | --- |
+| `POST /api/ai/parse` dengan token asli | 200, `mock: false`, 7,5 detik |
+| Field hasil | `mode: custom`, `title`, `quantity: 50`, `materialCost: 45000`, `laborCost: 5000`, `finishingCost: 8000`, `marginPercent: 30`, `deadline: "2 minggu"` |
+| Kuota | `remaining` 1 → 0, jadi unit benar-benar terpotong |
+| Replay `idempotencyKey` sama | 200, `remaining` tetap 0 (tidak memotong dua kali) |
+| Parse ketiga | 409 `quota` — batas 2/bulan ditegakkan di SQL |
+
+### Dua bug laten yang muncul hanya dengan model reasoning
+
+Keduanya tidak pernah terlihat sebelumnya karena provider selalu mock.
+
+1. **`max_tokens: 700` habis sebelum jawaban keluar.** `deepseek-flash` membakar 400–1400 token reasoning sebelum menulis JSON. Dengan cap 700 respons berakhir `finish_reason: "length"` dan `content` kosong, yang oleh handler dibaca sebagai `shape` error → refund + 502. Dinaikkan ke `4000`.
+2. **Timeout 12 detik terlalu pendek.** Parse 1200 karakter butuh 6–25 detik tergantung effort. Dinaikkan ke 22 detik, masih di bawah `maxDuration: 30` di `vercel.json` supaya refund tetap sempat jalan kalau model menggantung.
+
+`AI_REASONING_EFFORT=low` memangkas token reasoning (sekitar 900 vs 1400+) dan menjaga mayoritas parse di bawah 10 detik. Variabel ini opsional: provider yang menolak field `reasoning_effort` cukup dibiarkan kosong dan field-nya tidak dikirim sama sekali.
 
 ### Jebakan yang pernah terjadi di sini
 
 1. ESM vs CommonJS function — lihat bagian "Format modul fungsi".
 2. Panel ter-mount **di luar** `<FormProvider>` di `QuoteBuilder` (blok smart-input ada setelah `</form></FormProvider>`), sehingga `useFormContext()` bernilai `null` dan seluruh halaman mati dengan `Cannot read properties of null (reading 'control')` begitu flag dinyalakan. Tes sebelumnya selalu jalan dengan flag mati sehingga lolos. Perbaikan: `</FormProvider>` dipindah ke setelah blok panel; regresi dijaga `QuoteBuilder.test.tsx` (file dijalankan dengan flag ter-mock menyala).
+3. Model reasoning + `response_format: json_object` menuntut kata "json" muncul di prompt. System prompt sudah memenuhinya ("Balas HANYA satu objek JSON"), jadi jangan hapus kata itu saat menyunting prompt — provider akan membalas 400.
 
-### Sisa sebelum parse asli (berbayar kuota) jalan
+### Sisa pekerjaan
 
-1. ~~Terapkan `0003_phase3_ai_quota.sql`~~ — **selesai**. Diterapkan ke project live lewat Supabase CLI (`supabase migration repair --status applied 0001 0002` lalu `supabase db push`). Riwayat migrasi remote kini `0001, 0002, 0003`; verifikasi SQL langsung: fungsi `ai_parse_limit`, `ai_parse_remaining`, `begin_ai_parse`, `refund_ai_parse` ada, tabel `ai_parse_log` + `ai_ip_throttle` ada.
-2. ~~Isi Site URL / Redirect URLs Supabase~~ — **selesai**. `supabase/config.toml` kini memuat `site_url = "https://quotekilat.vercel.app"` dan tujuh `additional_redirect_urls` (`/reset-password` untuk prod, `localhost`/`127.0.0.1` port 3000/4173/5173). Diterapkan dengan `supabase config push`; `supabase config diff` sesudahnya `total: 0`, dan `config pull` melaporkan `changes: []` — remote identik dengan file.
-3. Set `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` di Vercel Production, lalu deploy ulang. Tanpa ini tetap mode mock.
+Tidak ada lagi langkah manual yang menghalangi parse asli — poin 1, 2, dan 3 di atas sudah selesai.
 
-   Jalur cepat (nama env saja yang ditampilkan, nilai tidak pernah dicetak):
+Catatan operasional:
 
-   ```bash
-   bash scripts/set-ai-provider.sh                 # cek status sekarang
-   AI_BASE_URL="…/v1" AI_MODEL="…" AI_API_KEY="…" \
-     bash scripts/set-ai-provider.sh               # set + deploy + smoke
-   ```
+- Kunci DeepSeek yang terpasang bersaldo **USD 0,53**. Dengan harga deepseek-flash sekitar USD 0,28 per 1 juta token input dan USD 0,42 per 1 juta token output, satu parse 1200 karakter memakai sekitar 1.250 token total, jadi saldo ini cukup untuk sekitar 1.000 parse. Isi ulang sebelum dipakai publik.
+- Kuota Free 2 parse/bulan ditegakkan di SQL, jadi biaya provider tidak bisa dipicu tanpa batas oleh satu akun. Throttle per-IP membatasi penyalahgunaan lintas akun dari satu jaringan.
+- Kalau saldo DeepSeek habis, provider membalas 402; handler menerjemahkannya jadi 502 `upstream` dan **mengembalikan** kuota pengguna lewat `refund_ai_parse`. Perilaku ini sudah diuji di unit test, bukan asumsi.
+- Rotasi kunci: jalankan ulang `AI_API_KEY=… bash scripts/set-ai-provider.sh`. Skrip melakukan `rm` lalu `add`, jadi tidak menumpuk nilai lama.
 
-   Kenapa belum terisi: kredensial provider yang ada di mesin ini tidak layak dipakai produksi.
-
-   | Kredensial | Hasil probe |
-   | --- | --- |
-   | `RUVICODE_API_KEY` | `/v1/models` 200, tapi `chat/completions` → **402 saldo habis** |
-   | `OPENROUTER_API_KEY` | kunci sehat ($49,98 dari $50), tetapi kredit workspace hanya cukup ~52 token → tidak bisa melayani parse |
-   | `OPENAI_API_KEY` | kosong/tidak valid |
-   | `DASHSCOPE_API_KEY`, `GROQ_API_KEY`, `TOKENROUTER_API_KEY`, `SILICONFLOW_API_KEY` | `chat/completions` → **401 invalid API-key** |
-   | 9router lokal (`localhost:20128`) | jalan, tetapi hanya bisa diakses dari mesin ini (tunnel `abc-tunnel.us` → 530) — tidak bisa dipakai Vercel |
-
-   Pilihan termurah: isi ulang Ruvicode (kunci sudah ada), atau buat kunci gratis Google AI Studio / Groq lalu set `AI_BASE_URL` + `AI_MODEL` sesuai penyedia tersebut.
+Untuk mengganti provider, cukup isi `AI_BASE_URL`/`AI_MODEL` lain selama endpoint-nya OpenAI-compatible dan mendukung `response_format: json_object`. Kosongkan `AI_REASONING_EFFORT` bila provider menolak field tersebut.

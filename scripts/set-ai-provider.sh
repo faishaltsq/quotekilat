@@ -32,6 +32,14 @@ for pair in "AI_BASE_URL:$AI_BASE_URL" "AI_MODEL:$AI_MODEL" "AI_API_KEY:$AI_API_
   echo "    $name ok"
 done
 
+# Optional: reasoning models spend output budget on hidden reasoning tokens before
+# emitting JSON. "low" keeps a parse inside the 30s function limit.
+if [ -n "${AI_REASONING_EFFORT:-}" ]; then
+  vercel env rm AI_REASONING_EFFORT production --yes >/dev/null 2>&1 || true
+  printf '%s' "$AI_REASONING_EFFORT" | vercel env add AI_REASONING_EFFORT production >/dev/null
+  echo "    AI_REASONING_EFFORT ok ($AI_REASONING_EFFORT)"
+fi
+
 echo "==> Deploy production"
 vercel deploy --prod --yes | tail -2
 

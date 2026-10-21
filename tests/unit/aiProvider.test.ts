@@ -11,12 +11,13 @@ const completion = (content: string) => ({ choices: [{ message: { content } }] }
 describe('readProviderEnv', () => {
   it('reads server-only names and ignores VITE_ variables', () => {
     const env = readProviderEnv({ AI_BASE_URL: ' https://x/v1 ', AI_MODEL: 'm', AI_API_KEY: 'k', VITE_AI_API_KEY: 'leak' } as NodeJS.ProcessEnv)
-    expect(env).toEqual({ baseUrl: 'https://x/v1', apiKey: 'k', model: 'm' })
+    expect(env).toEqual({ baseUrl: 'https://x/v1', apiKey: 'k', model: 'm', reasoningEffort: undefined })
   })
 
   it('is unconfigured when any part is missing', () => {
     expect(isConfigured(readProviderEnv({} as NodeJS.ProcessEnv))).toBe(false)
-    expect(isConfigured({ baseUrl: 'https://x/v1', apiKey: 'k' })).toBe(false)
+    const noKey = { baseUrl: 'https://x/v1', apiKey: '', model: 'm' }
+    expect(isConfigured(noKey)).toBe(false)
     expect(isConfigured(configured)).toBe(true)
   })
 })
@@ -39,6 +40,28 @@ describe('callProvider', () => {
     expect(body.temperature).toBe(0)
     expect(body.response_format).toEqual({ type: 'json_object' })
     expect(body.messages[0].content).toContain('JANGAN menebak')
+  })
+
+  it('reserves enough output budget for reasoning tokens', async () => {
+    const fetchMock = fakeFetch(completion('{"fields":{}}'))
+    await callProvider('x', configured, fetchMock)
+    const [, init] = (fetchMock as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0]
+    // A reasoning model spends this budget before it emits the JSON answer; the
+    // previous cap of 700 ran out mid-reasoning and returned empty content with
+    // finish_reason "length" on deepseek-flash.
+    expect(JSON.parse(String(init.body)).max_tokens).toBeGreaterThanOrEqual(2000)
+  })
+
+  it('forwards the optional reasoning effort knob only when it is set', async () => {
+    const withEffort = fakeFetch(completion('{"fields":{}}'))
+    await callProvider('x', { ...configured, reasoningEffort: 'low' }, withEffort)
+    const [, init] = (withEffort as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0]
+    expect(JSON.parse(String(init.body)).reasoning_effort).toBe('low')
+
+    const withoutEffort = fakeFetch(completion('{"fields":{}}'))
+    await callProvider('x', configured, withoutEffort)
+    const [, plainInit] = (withoutEffort as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0]
+    expect(JSON.parse(String(plainInit.body))).not.toHaveProperty('reasoning_effort')
   })
 
   it('parses a fenced JSON answer', async () => {

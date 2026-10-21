@@ -1,7 +1,7 @@
 # Status Implementasi QuoteKilat
 
 ## Hasil
-**Phase 1 guest MVP selesai, terverifikasi lokal, dan live di produksi.** Live: https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat . Build statis di `dist/`. Tidak ada database, AI, billing atau pembayaran aktif.
+**Phase 1 guest MVP selesai, terverifikasi lokal, dan live di produksi.** Live: https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat . Build statis di `dist/`. Database dan AI aktif (Supabase + DeepSeek); billing dan pembayaran belum.
 
 ## Fitur yang berfungsi
 - Landing responsif dengan builder nyata di hero, Barang/Jasa/Custom, contoh berlabel, input dinamis, dan state biaya/jumlah independen antar-mode.
@@ -60,14 +60,16 @@ Screenshot:
 - Dua akun uji tersisa di project (tenant A: 5 penawaran, tenant B: 1). Hard delete belum tersedia di app, jadi pembersihan lewat SQL Editor: `delete from auth.users where email like 'qk.qa.%@mailinator.com';` (cascade ke `quotes`/`usage_counters`/`profiles`).
 - Detail: `docs/PHASE-2-CLOUD.md`.
 
-## Phase 3 — Smart Input (kode selesai, belum menyala di produksi)
+## Phase 3 — Smart Input (aktif di produksi)
 - Endpoint `POST /api/ai/parse` (Vercel Function) memanggil provider OpenAI-compatible dari env server. Kunci model tidak pernah berprefix `VITE_`, jadi tidak masuk bundle; tes `deployConfig` mengunci batas itu.
+- Provider aktif: DeepSeek langsung (`deepseek-flash`) dengan `AI_REASONING_EFFORT=low`. Parse nyata terverifikasi di produksi: `mock:false`, 7,5 detik, kuota terpotong, replay idempotent tidak memotong dua kali, parse ketiga 409 `quota`.
 - Kuota Free **2 parse/bulan** ditegakkan di fungsi SQL `begin_ai_parse`, bukan di klien. `ai_parse_log (owner_id, idempotency_key)` membuat retry tidak memotong jatah dua kali; `refund_ai_parse` mengembalikan jatah saat provider gagal atau timeout.
 - Throttle per-IP hanya menyimpan `sha256(pepper:ip)` 32 hex. PII (email, tautan, NPWP, NIK, telepon, rekening) diredaksi sebelum teks dikirim ke model.
 - Model tidak menebak: hanya 13 field whitelist, key asing dibuang, field yang tidak disebut dibiarkan kosong. Hasil tampil sebagai diff dengan checkbox; isian yang sudah diisi pengguna harus dicentang manual.
 - Panel tidak pernah di-mount tanpa `VITE_FEATURE_AI_PARSE=true`; tanpa kredensial provider endpoint menjawab mode mock berlabel "belum aktif" tanpa memotong kuota.
-- Gate: 369 tes / 26 file, 66 assertion SQL (termasuk `apply-all.sql` di database kosong), build 6.84 s, 24 E2E. Detail: `docs/PHASE-3-SMART-INPUT.md`.
-- Belum aktif karena tiga langkah manual: migrasi `0003` ke project live, env server `AI_*` di Vercel, dan flag `VITE_FEATURE_AI_PARSE=true`.
+- Dua bug laten ditemukan saat menyambungkan model reasoning dan sudah diperbaiki: `max_tokens` 700 habis untuk reasoning (naik ke 4000) dan timeout 12 detik terlalu pendek (naik ke 22 detik, di bawah `maxDuration: 30`).
+- Gate: 378 tes / 26 file, 66 assertion SQL (termasuk `apply-all.sql` di database kosong), build lulus, 24 E2E. Detail: `docs/PHASE-3-SMART-INPUT.md`.
+- Saldo DeepSeek saat pemasangan USD 0,53 — cukup sekitar 1.000 parse. Isi ulang sebelum dipakai publik.
 
 ## Pending — di luar Phase 3
 - **Phase 4:** Midtrans sandbox, webhook terverifikasi/idempotent, lifecycle akses berbayar, dan kuota Pro 40 parse/bulan. Tidak ada penagihan nyata.
