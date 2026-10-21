@@ -1,7 +1,7 @@
 # Status Implementasi QuoteKilat
 
 ## Hasil
-**Phase 1 guest MVP selesai, terverifikasi lokal, dan live di produksi.** Live: https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat . Build statis di `dist/`. Database dan AI aktif (Supabase + DeepSeek); billing dan pembayaran belum.
+**Phase 1 guest MVP selesai, terverifikasi lokal, dan live di produksi.** Live: https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat . Build statis di `dist/`. Database dan AI aktif (Supabase + DeepSeek). Rute billing (`/api/billing/checkout|status|webhook`) sudah ada di kode dan diuji unit, tetapi belum aktif: butuh env Midtrans serta migrasi `0004_phase4_billing.sql` yang belum diterapkan ke database live.
 
 ## Fitur yang berfungsi
 - Landing responsif dengan builder nyata di hero, Barang/Jasa/Custom, contoh berlabel, input dinamis, dan state biaya/jumlah independen antar-mode.
@@ -20,7 +20,7 @@
 | `pnpm typecheck` | Lulus |
 | `pnpm lint` | Lulus, 0 error |
 | `pnpm test` | **384 tes lulus, 27 file** |
-| `pnpm test:sql` | **37 assertion RLS/grant/kuota lulus** di `postgres:16-alpine` |
+| `pnpm test:sql` | **94 assertion RLS/grant/kuota/billing lulus** di `postgres:16-alpine` |
 | `pnpm build` | Lulus, produksi statis di `dist/` |
 | `pnpm test:e2e` | **24 tes lulus**, Chromium desktop + emulasi mobile |
 | `pnpm audit --prod` | Tidak ditemukan kerentanan yang diketahui |
