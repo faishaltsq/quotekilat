@@ -7,6 +7,7 @@ import { HeroParallaxLayers } from '../components/landing/HeroParallaxLayers'
 import { MarketingSections, PricingPlans } from '../components/landing/MarketingSections'
 import { LegalPage } from './LegalPage'
 import { ResetPasswordPage } from './ResetPasswordPage'
+import { ConsentBanner } from '../components/analytics/ConsentBanner'
 import '../components/landing/landing.css'
 function Navigation() {
   const location = useLocation()
@@ -33,4 +34,4 @@ function RouteEffects() {
   useEffect(() => { document.title = pathname === '/privacy' ? 'Privasi (draf) — QuoteKilat' : pathname === '/terms' ? 'Ketentuan (draf) — QuoteKilat' : 'QuoteKilat — Hitung tepat. Tawarkan cepat.'; window.scrollTo({ top: 0, behavior: 'instant' }) }, [pathname])
   return null
 }
-export function App() { return <><a className="skip-link" href="#main-content">Lewati ke konten</a><RouteEffects /><Navigation /><main id="main-content"><Routes><Route path="/" element={<Home />} /><Route path="/pricing" element={<><div className="container pricing-page-heading"><h1>Pilihan sederhana, tanpa hambatan.</h1><p>Guest aktif. Akun, Pro dan pembayaran belum tersedia.</p></div><PricingPlans /></>} /><Route path="/privacy" element={<LegalPage kind="privacy" />} /><Route path="/terms" element={<LegalPage kind="terms" />} /><Route path="/reset-password" element={<ResetPasswordPage />} /><Route path="*" element={<NotFound />} /></Routes></main><Footer /></> }
+export function App() { return <><a className="skip-link" href="#main-content">Lewati ke konten</a><RouteEffects /><Navigation /><main id="main-content"><Routes><Route path="/" element={<Home />} /><Route path="/pricing" element={<><div className="container pricing-page-heading"><h1>Pilihan sederhana, tanpa hambatan.</h1><p>Guest aktif. Akun, Pro dan pembayaran belum tersedia.</p></div><PricingPlans /></>} /><Route path="/privacy" element={<LegalPage kind="privacy" />} /><Route path="/terms" element={<LegalPage kind="terms" />} /><Route path="/reset-password" element={<ResetPasswordPage />} /><Route path="*" element={<NotFound />} /></Routes></main><Footer /><ConsentBanner /></> }

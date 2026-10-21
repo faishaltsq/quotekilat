@@ -159,6 +159,17 @@ test('WCAG A/AA automated scan has no violations', async ({ page }) => {
   expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()).violations).toEqual([])
 })
 
+test('sends no analytics before a consent choice', async ({ page }) => {
+  const collected: string[] = []
+  page.on('request', (request) => {
+    if (request.url().includes('/api/analytics/collect')) collected.push(request.url())
+  })
+  await page.goto('/')
+  await page.locator('#quote-builder').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(500)
+  expect(collected).toHaveLength(0)
+})
+
 test('responsive viewports avoid horizontal scroll and reduced motion disables parallax', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   for (const width of [360, 390, 430, 768, 1280]) {

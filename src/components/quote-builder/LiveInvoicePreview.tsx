@@ -1,6 +1,7 @@
 import { Download, FileText, MessageCircle } from 'lucide-react'
 import type { QuoteSnapshot } from '../../lib/quotation/quote'
 import { formatIDR } from '../../lib/pricing/format'
+import { track } from '../../lib/analytics/track'
 
 type Props = {
   quote: QuoteSnapshot | null
@@ -24,10 +25,10 @@ export function LiveInvoicePreview({ quote, busy, onCopy, onPdf }: Props) {
       </div>
 
       <div className="live-actions">
-        <button type="button" className="button button-secondary" disabled={!quote} onClick={onCopy}>
+        <button type="button" className="button button-secondary" disabled={!quote} onClick={() => { track('whatsapp_copied'); onCopy() }}>
           <MessageCircle size={16} aria-hidden="true" /> Salin WhatsApp
         </button>
-        <button type="button" className="button button-primary" disabled={!quote || busy} onClick={onPdf}>
+        <button type="button" className="button button-primary" disabled={!quote || busy} onClick={() => { track('pdf_downloaded'); onPdf() }}>
           <Download size={16} aria-hidden="true" /> {busy ? 'Membuat PDF…' : 'Unduh PDF'}
         </button>
       </div>

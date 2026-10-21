@@ -3,6 +3,7 @@ import { ArrowRight, Loader2 } from 'lucide-react'
 import { AuthContext } from '../../lib/cloud/authContext'
 import { useBilling } from '../../lib/billing/useBilling'
 import { startCheckout } from '../../lib/billing/client'
+import { track } from '../../lib/analytics/track'
 import './billing.css'
 
 /**
@@ -39,6 +40,7 @@ export function UpgradePanel() {
         setError(result.message)
         return
       }
+      track('checkout_started', { plan: 'pro' })
       window.location.assign(result.redirectUrl)
     } finally {
       setBusy(false)

@@ -1,0 +1,13 @@
+.consent-banner {
+  position: fixed; left: 1rem; right: 1rem; bottom: 1rem; z-index: 60;
+  display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between;
+  padding: .9rem 1rem; border-radius: 12px;
+  background: #0f1b33; color: #eaf0ff; box-shadow: 0 18px 50px -30px #000c;
+}
+.consent-banner p { margin: 0; max-width: 46ch; font-size: .8rem; line-height: 1.65; }
+/* The banner is fixed, so the page needs room beneath it or it covers footer
+   controls and makes them unclickable. */
+body:has(.consent-banner) { padding-bottom: 7rem; }
+.consent-actions { display: flex; gap: .5rem; }
+.consent-actions .button { min-height: 40px; }
+@media (max-width: 540px) { .consent-banner { left: .6rem; right: .6rem; bottom: .6rem; } }

@@ -42,13 +42,24 @@ peningkatan optimis. `redirectUrl` yang bukan `https://` ditolak sebelum
 Tanpa env di atas, rute menjawab 503 `disabled` dan panel upgrade menampilkan
 status "Langganan belum aktif di server ini" — tidak pernah berpura-pura Pro.
 
+## Analitik consent-gated
+
+Event hanya dikirim setelah pengguna memilih **Boleh** di banner; tanpa pilihan,
+`track()` langsung kembali. Tujuannya `/api/analytics/collect` di origin sendiri
+(CSP tidak dilonggarkan), kosakata event tertutup, dan properti disaring: kunci di
+luar daftar izin dibuang, teks lebih dari 40 karakter dibuang, jadi nama pelanggan
+atau catatan tidak mungkin ikut terkirim. Fase ini belum menyimpan agregat ke
+database — rute menjawab 204 dan tidak menulis apa pun.
+
 ## Status verifikasi
 
 Sudah dijalankan dan lulus:
 
 - `pnpm test:sql` di `postgres:16-alpine`: 28 assertion fase-4 (skema billing,
   `current_plan()`, kuota paket, `begin_market_research`) plus fase-2/fase-3.
-- Seluruh test unit billing di atas, `pnpm typecheck`, `pnpm lint`.
+- Seluruh test unit di atas: **435 test / 36 file** lulus, plus `pnpm typecheck`, `pnpm lint`, `pnpm build`.
+- `pnpm test:e2e`: **26 lulus** (24 sebelumnya + 2 assertion baru bahwa tidak ada
+  request `/api/analytics/collect` sebelum pilihan consent).
 
 Belum dijalankan (butuh akses dashboard Midtrans dan database live, tidak bisa
 diotomasi dari repo):

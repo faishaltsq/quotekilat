@@ -7,6 +7,7 @@ import { formatIDR } from '../../lib/pricing/format'
 import { newIdempotencyKey } from '../../lib/cloud/useCloudQuotes'
 import type { SaveQuoteSource } from '../../lib/cloud/quoteMapping'
 import { useBilling } from '../../lib/billing/useBilling'
+import { track } from '../../lib/analytics/track'
 import { AuthDialog } from './AuthDialog'
 import './cloud.css'
 
@@ -47,6 +48,7 @@ export function CloudSavePanel({ source, disabledReason }: Props) {
       await save(source, key)
       setPendingKey(null)
       setNotice('Penawaran tersimpan di cloud.')
+      track('cloud_quote_saved', { plan: billing?.plan ?? 'free' })
     } catch (cause) {
       if (cause instanceof CloudError && cause.code === 'QUOTA_EXCEEDED') {
         setFailure(`Kuota ${quoteLimit} penawaran bulan ini sudah habis. Data tetap aman di perangkat ini.`)
