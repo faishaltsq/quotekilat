@@ -19,8 +19,8 @@
 | `NODE_ENV=development pnpm install --frozen-lockfile --offline` | Lulus; lockfile konsisten, devDependencies tersedia |
 | `pnpm typecheck` | Lulus |
 | `pnpm lint` | Lulus, 0 error |
-| `pnpm test` | **384 tes lulus, 27 file** |
-| `pnpm test:sql` | **94 assertion RLS/grant/kuota/billing lulus** di `postgres:16-alpine` |
+| `pnpm test` | **447 tes lulus, 38 file** |
+| `pnpm test:sql` | **107 assertion RLS/grant/kuota/billing/pasar lulus** di `postgres:16-alpine` |
 | `pnpm build` | Lulus, produksi statis di `dist/` |
 | `pnpm test:e2e` | **24 tes lulus**, Chromium desktop + emulasi mobile |
 | `pnpm audit --prod` | Tidak ditemukan kerentanan yang diketahui |
