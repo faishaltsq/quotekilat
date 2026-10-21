@@ -22,7 +22,7 @@
 | `pnpm test` | **447 tes lulus, 38 file** |
 | `pnpm test:sql` | **107 assertion RLS/grant/kuota/billing/pasar lulus** di `postgres:16-alpine` |
 | `pnpm build` | Lulus, produksi statis di `dist/` |
-| `pnpm test:e2e` | **24 tes lulus**, Chromium desktop + emulasi mobile |
+| `pnpm test:e2e` | **26 tes lulus**, Chromium desktop + emulasi mobile |
 | `pnpm audit --prod` | Tidak ditemukan kerentanan yang diketahui |
 | HTTP preview `/` | 200, title QuoteKilat sesuai |
 | **Produksi** `https://quotekilat.vercel.app` | `/`, `/privacy`, `/terms`, `/pricing`, rute tak dikenal → 200; CSP, HSTS, nosniff, Referrer-Policy, Permissions-Policy aktif; `/assets/*` cache immutable |
