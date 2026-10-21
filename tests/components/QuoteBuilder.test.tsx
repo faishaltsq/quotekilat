@@ -14,19 +14,22 @@ import { AuthProvider } from '../../src/lib/cloud/AuthProvider'
 const renderGuest = () => render(<AuthProvider config={null}><QuoteBuilder /></AuthProvider>)
 
 beforeEach(() => { localStorage.clear(); clearTabDraft() })
-it('calculates a guest quote and previews it without registration', async () => {
+it('calculates a guest quote and shows it in the live preview without registration', async () => {
   renderGuest()
   expect(screen.getByLabelText('Harga jual penawaran')).toHaveTextContent(/250[.]000/)
-  await userEvent.click(screen.getByRole('button', { name: 'Buat Penawaran' }))
-  expect(await screen.findByRole('dialog', { name: 'Pratinjau penawaran' })).toBeVisible()
-  expect(screen.getByRole('dialog')).not.toHaveTextContent('Biaya dasar')
+  const preview = screen.getByRole('complementary', { name: 'Pratinjau penawaran langsung' })
+  expect(preview).toHaveTextContent('Hampers custom')
+  expect(preview).toHaveTextContent(/250[.]000/)
+  expect(preview).not.toHaveTextContent('Biaya dasar')
+  expect(screen.queryByRole('button', { name: 'Buat Penawaran' })).not.toBeInTheDocument()
 })
 it('updates service costs and prevents invalid quotes', async () => {
   renderGuest()
   await userEvent.click(screen.getByRole('tab', { name: 'Jasa' }))
   expect(screen.getByLabelText('Estimasi jam kerja')).toHaveValue('10')
   await userEvent.clear(screen.getByLabelText('Estimasi jam kerja'))
-  expect(screen.getByRole('button', { name: 'Buat Penawaran' })).toBeDisabled()
+  // With no calculable quote the live preview has nothing to export.
+  expect(screen.getByRole('button', { name: 'Unduh PDF' })).toBeDisabled()
   expect(screen.getByLabelText('Estimasi jam kerja')).toHaveAttribute('aria-invalid', 'true')
 })
 it('hides the cloud panel entirely when the deployment has no Supabase config', () => {
@@ -38,8 +41,9 @@ it('hides the cloud panel entirely when the deployment has no Supabase config', 
 // Enabling the production flag shipped the panel outside the FormProvider, so
 // useFormContext() returned null and the whole page died on form.control. The
 // flag must render the real panel without taking the builder down with it.
-it('renders the live smart input panel inside the builder when the flag is on', () => {
+it('renders the live smart input panel inside the builder when the flag is on', async () => {
   renderGuest()
+  await userEvent.click(screen.getByText(/Simpan, draft & AI/))
   expect(screen.getByRole('region', { name: /Smart Input/i })).toBeVisible()
   // The form around it must still work: a priced quote proves the context survived.
   expect(screen.getByLabelText('Harga jual penawaran')).toHaveTextContent(/250[.]000/)
