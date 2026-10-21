@@ -54,3 +54,42 @@ export async function callRpc(
   const data: unknown = await response.json().catch(() => null)
   return { ok: response.ok, status: response.status, data }
 }
+
+/**
+ * The webhook has no user session: Midtrans calls us. It authenticates with the
+ * service-role key, which is read here and never returned to a caller. A
+ * publishable key is rejected outright so a misconfigured deploy fails closed.
+ */
+export function readServiceConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig | null {
+  const url = env.SUPABASE_URL?.trim() ?? ''
+  const key = env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? ''
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url) || !key) return null
+  if (!key.startsWith('sb_secret_') && !key.startsWith('eyJ')) return null
+  return { url: url.replace(/\/$/, ''), key }
+}
+
+/** Same call shape as `callRpc`, but authenticates as the service role. */
+export async function callRpcAsService(
+  name: string,
+  args: Record<string, unknown>,
+  config: ServerConfig,
+  fetchImpl: typeof fetch = fetch,
+): Promise<RpcOutcome> {
+  let response: Response
+  try {
+    response = await fetchImpl(`${config.url}/rest/v1/rpc/${name}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        apikey: config.key,
+        authorization: `Bearer ${config.key}`,
+      },
+      body: JSON.stringify(args),
+      signal: timeoutSignal(10000),
+    })
+  } catch {
+    return { ok: false, status: 0, data: null }
+  }
+  const data = await response.json().catch(() => null)
+  return { ok: response.ok, status: response.status, data }
+}

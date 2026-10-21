@@ -122,6 +122,18 @@ describe('phase 3 secret boundary', () => {
   it('the API route rejects the service-role secret key', () => {
     expect(read('server/_lib/supabase.ts')).toContain("startsWith('sb_secret_')")
   })
+
+  it('the service-role key is documented server-side only', () => {
+    expect(read('.env.server.example')).toContain('SUPABASE_SERVICE_ROLE_KEY')
+    expect(read('.env.example')).not.toContain('SUPABASE_SERVICE_ROLE_KEY')
+    expect(read('.env.example')).not.toContain('MIDTRANS_SERVER_KEY')
+  })
+
+  it('server code never inlines a VITE_ payment key', () => {
+    for (const file of ['server/_lib/midtrans.ts', 'server/billing/checkout.ts', 'server/billing/webhook.ts']) {
+      expect(read(file)).not.toMatch(/process\.env\.VITE_|import\.meta\.env/)
+    }
+  })
 })
 
 /**
