@@ -23,6 +23,15 @@ export function LiveInvoicePreview({ quote, busy, onCopy, onPdf }: Props) {
         </span>
       </div>
 
+      <div className="live-actions">
+        <button type="button" className="button button-secondary" disabled={!quote} onClick={onCopy}>
+          <MessageCircle size={16} aria-hidden="true" /> Salin WhatsApp
+        </button>
+        <button type="button" className="button button-primary" disabled={!quote || busy} onClick={onPdf}>
+          <Download size={16} aria-hidden="true" /> {busy ? 'Membuat PDF…' : 'Unduh PDF'}
+        </button>
+      </div>
+
       <div className="live-paper">
         {quote ? (
           <div className="quote-paper">
@@ -74,20 +83,21 @@ export function LiveInvoicePreview({ quote, busy, onCopy, onPdf }: Props) {
               </p>
               {quote.details.notes && <p className="preserve-lines">{quote.details.notes}</p>}
             </div>
+            <div className="quote-signature">
+              <div>
+                <span>Disiapkan oleh</span>
+                <strong>{quote.details.businessName || 'QuoteKilat'}</strong>
+              </div>
+              <div>
+                <span>Disetujui oleh</span>
+                <strong>{quote.details.customerName || 'Pelanggan'}</strong>
+              </div>
+            </div>
             <p className="quote-paper-footer">Terima kasih atas kepercayaan Anda.</p>
           </div>
         ) : (
           <p className="live-empty">Isi nama item dan biaya untuk melihat penawaran di sini.</p>
         )}
-      </div>
-
-      <div className="live-actions">
-        <button type="button" className="button button-secondary" disabled={!quote} onClick={onCopy}>
-          <MessageCircle size={16} aria-hidden="true" /> Salin WhatsApp
-        </button>
-        <button type="button" className="button button-primary" disabled={!quote || busy} onClick={onPdf}>
-          <Download size={16} aria-hidden="true" /> {busy ? 'Membuat PDF…' : 'Unduh PDF'}
-        </button>
       </div>
 
       <p className="live-note">

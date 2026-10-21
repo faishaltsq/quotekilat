@@ -40,6 +40,8 @@
   display: grid;
   gap: 1.1rem;
   align-content: start;
+  position: sticky;
+  top: 1.5rem;
   padding-top: 0.4rem;
   color: var(--ink, #17223c);
 }
@@ -345,7 +347,7 @@
 
 @media (max-width: 1180px) {
   .hero-shell { grid-template-columns: 1fr; gap: 1.25rem; width: calc(100% - 40px); }
-  .qk-hero-copy { gap: 0.85rem; }
+  .qk-hero-copy { gap: 0.85rem; position: static; }
   .qk-hero-values { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem 1.5rem; }
 }
 

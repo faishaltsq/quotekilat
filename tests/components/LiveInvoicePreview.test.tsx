@@ -26,6 +26,15 @@ describe('LiveInvoicePreview', () => {
     expect(panel).not.toHaveTextContent('BIAYA RAHASIA')
   })
 
+  it('closes the document with a signature block instead of empty space', () => {
+    render(<LiveInvoicePreview quote={quote} busy={false} onCopy={vi.fn()} onPdf={vi.fn()} />)
+    const panel = screen.getByRole('complementary', { name: 'Pratinjau penawaran langsung' })
+    expect(panel).toHaveTextContent('Disiapkan oleh')
+    expect(panel).toHaveTextContent('Toko Uji')
+    expect(panel).toHaveTextContent('Disetujui oleh')
+    expect(panel).toHaveTextContent('Budi')
+  })
+
   it('explains the empty state and disables both exports', () => {
     render(<LiveInvoicePreview quote={null} busy={false} onCopy={vi.fn()} onPdf={vi.fn()} />)
     expect(screen.getByText(/Isi nama item dan biaya/i)).toBeVisible()
