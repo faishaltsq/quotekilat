@@ -1,62 +1,62 @@
 /* Landing and legal styles only. Shared tokens and .button/.container come from the app shell. */
-.qk-hero-copy {
+
+/* ── Hero shell: copy rail · calculator · live invoice ─────────────────── */
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  border-bottom: 1px solid var(--line);
+  background: radial-gradient(120% 90% at 8% -12%, #e6ecff 0%, #f3f6fc 46%, #f7f9fd 100%);
+}
+
+/* Faint dot grid masked to the top: the "khas QuoteKilat" wash behind the cards. */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(#c3cff0 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: 0.55;
+  -webkit-mask-image: radial-gradient(120% 85% at 50% 0%, #000 10%, transparent 70%);
+  mask-image: radial-gradient(120% 85% at 50% 0%, #000 10%, transparent 70%);
+}
+
+.hero-shell {
   position: relative;
   z-index: 1;
-  max-width: 34rem;
-  padding: 2rem 0 2.5rem;
+  display: grid;
+  grid-template-columns: 14.5rem minmax(0, 1fr);
+  align-items: start;
+  gap: 1.75rem;
+  width: min(1320px, calc(100% - 40px));
+  margin-inline: auto;
+  padding-block: 2.25rem 2.75rem;
+}
+
+/* ── Copy rail ────────────────────────────────────────────────────────── */
+.qk-hero-copy {
+  display: grid;
+  gap: 1.1rem;
+  align-content: start;
+  padding-top: 0.4rem;
   color: var(--ink, #17223c);
 }
 
-.qk-availability {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+.qk-hero-h1 {
   margin: 0;
-  padding: 0.45rem 0.8rem;
-  border: 1px solid #e4e9fc;
-  border-radius: 99px;
-  background: #eff2fd;
-  color: #354471;
-  font-size: 0.72rem;
-  font-weight: 600;
-  line-height: 1.5;
-}
-
-.qk-availability-dot {
-  width: 5px;
-  height: 5px;
-  margin-right: 0.15rem;
-  border-radius: 50%;
-  background: var(--accent, #526ee5);
-}
-
-.qk-availability-extra { margin-left: -0.2rem; }
-
-.qk-hero-title {
-  margin: 1.65rem 0 1.15rem;
   color: var(--ink, #17223c);
-  font-size: clamp(2rem, 3.22vw, 2.95rem);
+  font-size: 0.95rem;
   font-weight: 750;
-  line-height: 1.16;
-  letter-spacing: -0.055em;
-}
-
-.qk-hero-title span { display: block; }
-
-.qk-hero-description {
-  max-width: 29rem;
-  margin: 0;
-  color: var(--muted, #52617d);
-  font-size: 1.025rem;
-  line-height: 1.75;
-  text-wrap: pretty;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
 }
 
 .qk-hero-values {
   display: grid;
-  gap: 0.85rem;
-  margin: 1.75rem 0 0;
+  gap: 0.8rem;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -64,42 +64,43 @@
 .qk-hero-values li {
   display: flex;
   align-items: flex-start;
-  gap: 0.65rem;
+  gap: 0.5rem;
   color: #43516c;
-  font-size: 0.825rem;
-  line-height: 1.6;
+  font-size: 0.74rem;
+  line-height: 1.65;
 }
 
 .qk-hero-values svg {
   flex: 0 0 auto;
   margin-top: 0.12rem;
-  color: var(--accent, #526ee5);
+  color: var(--accent, #4b66d8);
 }
 
-.qk-hero-cta {
+.qk-hero-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  color: var(--muted, #52617d);
+  font-size: 0.66rem;
+  line-height: 1.7;
+}
+
+.qk-hero-down {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  min-height: 46px;
-  margin-top: 1.9rem;
+  gap: 0.35rem;
+  min-height: 40px;
+  color: #3c4fa0;
+  font-size: 0.7rem;
+  font-weight: 650;
   text-decoration: none;
 }
 
-.qk-builder-cue {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  max-width: 28rem;
-  margin: 1.55rem 0 0;
-  color: var(--muted, #52617d);
-  font-size: 0.73rem;
-}
+.qk-hero-down:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-.qk-builder-cue svg { transform: rotate(-26deg); }
-
-/* No hit targets, legible data, or unbounded animation in the decorative layers. */
+/* ── Parallax: 6 invoice sheets, opacity 0.20–0.30, no blur ────────────── */
 .qk-hero-layers {
   position: absolute;
   z-index: 0;
@@ -113,36 +114,21 @@
 .qk-invoice-sheet {
   position: absolute;
   display: block;
-  width: 170px;
+  width: 190px;
   height: auto;
-  color: var(--accent, #526ee5);
-  opacity: 0.12;
+  color: #3b52b8;
+  opacity: 0.26;
   transform-origin: center;
-  filter: blur(0.4px);
 }
 
-.qk-invoice-sheet-1 {
-  top: 3%;
-  left: 30%;
-  width: 145px;
-  opacity: 0.14;
-  transform: translateY(calc(var(--qk-parallax) * 0.45)) rotate(-2deg);
-}
-
-.qk-invoice-sheet-2 {
-  bottom: 4%;
-  left: 1%;
-  width: 205px;
-  transform: translateY(var(--qk-parallax)) rotate(2.2deg);
-}
-
-.qk-invoice-sheet-3 {
-  top: 1%;
-  right: 4%;
-  width: 125px;
-  opacity: 0.1;
-  transform: translateY(calc(var(--qk-parallax) * 0.3)) rotate(1deg);
-}
+/* Sheets sit in the transparent copy rail and the outer gutters only:
+   the builder and preview cards are opaque, so a sheet behind them is invisible. */
+.qk-invoice-sheet-1 { top: 2%;  left: 1%;   width: 150px; opacity: 0.30; transform: translateY(calc(var(--qk-parallax) * 0.30)) rotate(-3deg); }
+.qk-invoice-sheet-2 { top: 34%; left: 6%;   width: 118px; opacity: 0.26; transform: translateY(calc(var(--qk-parallax) * 0.55)) rotate(2.4deg); }
+.qk-invoice-sheet-3 { top: 62%; left: 0;    width: 168px; opacity: 0.28; transform: translateY(calc(var(--qk-parallax) * 0.75)) rotate(-1.6deg); }
+.qk-invoice-sheet-4 { top: 0;   right: 0;   width: 132px; opacity: 0.24; transform: translateY(calc(var(--qk-parallax) * 0.42)) rotate(1.8deg); }
+.qk-invoice-sheet-5 { bottom: 0; right: 1%; width: 176px; opacity: 0.22; transform: translateY(calc(var(--qk-parallax) * 0.90)) rotate(-2deg); }
+.qk-invoice-sheet-6 { top: 44%; right: 6%;  width: 96px;  opacity: 0.20; transform: translateY(calc(var(--qk-parallax) * 1))    rotate(1deg); }
 
 /* Each section carries one idea; no global element resets. */
 .qk-section {
@@ -357,6 +343,20 @@
   border-radius: 4px;
 }
 
+@media (max-width: 1180px) {
+  .hero-shell { grid-template-columns: 1fr; gap: 1.25rem; width: calc(100% - 40px); }
+  .qk-hero-copy { gap: 0.85rem; }
+  .qk-hero-values { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem 1.5rem; }
+}
+
+@media (max-width: 720px) {
+  .hero-shell { width: calc(100% - 32px); padding-block: 1.25rem 1.75rem; gap: 1rem; }
+  .qk-hero-values { grid-template-columns: 1fr; }
+  .qk-hero-h1 { font-size: 0.9rem; }
+  .qk-hero-down { min-height: 44px; }
+  .qk-hero-layers { display: none; }
+}
+
 @media (max-width: 1100px) {
   .qk-benefits { gap: 1.25rem; }
   .qk-benefits li { gap: 0.6rem; }
@@ -380,14 +380,9 @@
 
 @media (max-width: 768px) {
   .qk-hero-copy { max-width: 36rem; padding: 0.4rem 0 0.5rem; }
-  .qk-availability { padding: 0.35rem 0.65rem; font-size: 0.65rem; }
-  .qk-hero-title { margin-top: 1.25rem; margin-bottom: 0.85rem; font-size: clamp(2rem, 6.5vw, 2.6rem); }
-  .qk-hero-description { max-width: 32rem; font-size: 0.9rem; line-height: 1.75; }
   .qk-hero-values { gap: 0.45rem; margin-top: 1.1rem; }
   .qk-hero-values li { gap: 0.5rem; font-size: 0.75rem; }
   .qk-hero-values svg { width: 16px; height: 16px; }
-  .qk-hero-cta { min-height: 44px; margin-top: 1.2rem; font-size: 0.8rem; }
-  .qk-builder-cue { display: none; }
   .qk-hero-layers { display: none; }
   .qk-section { padding: 3.75rem 0; scroll-margin-top: 5rem; }
   .qk-section-heading { margin-bottom: 2.2rem; }
@@ -431,9 +426,6 @@
 }
 
 @media (max-width: 480px) {
-  .qk-hero-title { font-size: clamp(1.9rem, 8.1vw, 2.25rem); }
-  .qk-availability-extra { display: none; }
-  .qk-hero-description { max-width: 24rem; }
   .qk-benefits { gap: 1.3rem 1rem; }
   .qk-benefits li { display: block; }
   .qk-benefit-icon { margin: 0 0 0.6rem; }
@@ -452,6 +444,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qk-invoice-sheet, .qk-builder-cue svg { transform: none !important; }
+  .qk-invoice-sheet { transform: none !important; }
   .qk-faq-plus { transition: none; }
 }
+
+/* Below the fold: everything explanatory lives here, quieter than the hero. */
+.qk-benefit-strip { background: var(--surface); }
+.qk-section { padding: 4.5rem 0; }
+.qk-plan-active { border-color: #b9c4ee; }
+.qk-plans .qk-plan:last-child { border-color: #dfe5f4; background: linear-gradient(180deg, #fbfcff, #fff); }
+
+.pricing-page-heading { padding-block: 3.5rem 0; }
+.pricing-page-heading h1 { margin: 0; font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 700; letter-spacing: -.045em; }
+.pricing-page-heading p { margin: .8rem 0 0; color: var(--muted); font-size: .9rem; line-height: 1.8; }
