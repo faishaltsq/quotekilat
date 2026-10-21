@@ -138,6 +138,26 @@ Karena `AI_API_KEY`/`AI_BASE_URL` belum diisi, provider jalan di **mode mock**: 
 
 ### Sisa sebelum parse asli (berbayar kuota) jalan
 
-1. Terapkan `supabase/migrations/0003_phase3_ai_quota.sql` ke project live (`xirgtbnvthgjrvgnfrsg`) lewat SQL Editor — akun MCP tidak punya akses ke project ini, jadi tidak bisa dijalankan dari sesi ini. Tanpa ini `begin_ai_parse` gagal dan handler menjawab 503 `upstream` dengan jujur.
-2. Set `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` di Vercel Production, lalu deploy ulang. Tanpa ini tetap mode mock.
-3. Isi Site URL / Redirect URLs Supabase agar reset password tidak salah arah.
+1. ~~Terapkan `0003_phase3_ai_quota.sql`~~ — **selesai**. Diterapkan ke project live lewat Supabase CLI (`supabase migration repair --status applied 0001 0002` lalu `supabase db push`). Riwayat migrasi remote kini `0001, 0002, 0003`; verifikasi SQL langsung: fungsi `ai_parse_limit`, `ai_parse_remaining`, `begin_ai_parse`, `refund_ai_parse` ada, tabel `ai_parse_log` + `ai_ip_throttle` ada.
+2. ~~Isi Site URL / Redirect URLs Supabase~~ — **selesai**. `supabase/config.toml` kini memuat `site_url = "https://quotekilat.vercel.app"` dan tujuh `additional_redirect_urls` (`/reset-password` untuk prod, `localhost`/`127.0.0.1` port 3000/4173/5173). Diterapkan dengan `supabase config push`; `supabase config diff` sesudahnya `total: 0`, dan `config pull` melaporkan `changes: []` — remote identik dengan file.
+3. Set `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` di Vercel Production, lalu deploy ulang. Tanpa ini tetap mode mock.
+
+   Jalur cepat (nama env saja yang ditampilkan, nilai tidak pernah dicetak):
+
+   ```bash
+   bash scripts/set-ai-provider.sh                 # cek status sekarang
+   AI_BASE_URL="…/v1" AI_MODEL="…" AI_API_KEY="…" \
+     bash scripts/set-ai-provider.sh               # set + deploy + smoke
+   ```
+
+   Kenapa belum terisi: kredensial provider yang ada di mesin ini tidak layak dipakai produksi.
+
+   | Kredensial | Hasil probe |
+   | --- | --- |
+   | `RUVICODE_API_KEY` | `/v1/models` 200, tapi `chat/completions` → **402 saldo habis** |
+   | `OPENROUTER_API_KEY` | kunci sehat ($49,98 dari $50), tetapi kredit workspace hanya cukup ~52 token → tidak bisa melayani parse |
+   | `OPENAI_API_KEY` | kosong/tidak valid |
+   | `DASHSCOPE_API_KEY`, `GROQ_API_KEY`, `TOKENROUTER_API_KEY`, `SILICONFLOW_API_KEY` | `chat/completions` → **401 invalid API-key** |
+   | 9router lokal (`localhost:20128`) | jalan, tetapi hanya bisa diakses dari mesin ini (tunnel `abc-tunnel.us` → 530) — tidak bisa dipakai Vercel |
+
+   Pilihan termurah: isi ulang Ruvicode (kunci sudah ada), atau buat kunci gratis Google AI Studio / Groq lalu set `AI_BASE_URL` + `AI_MODEL` sesuai penyedia tersebut.
