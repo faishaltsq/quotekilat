@@ -26,7 +26,7 @@ describe('MarketingSections', () => {
       '—', '—', '—', '—',
     ])
     expect(screen.getByRole('button', { name: /Cek harga pasar/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Smart Input/ })).toBeDisabled()
+    expect(screen.getByRole('link', { name: /Coba Smart Input/i })).toHaveAttribute('href', '/#quote-builder')
   })
 
   it('offers only Guest now and marks all account and Pro additions as future proposals', () => {

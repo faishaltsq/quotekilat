@@ -251,7 +251,9 @@
 .qk-smart-preview > svg { flex: 0 0 auto; margin-top: 0.15rem; color: #6676a4; }
 .qk-smart-preview h3 { margin: 0 0 0.5rem; font-size: 0.85rem; font-weight: 650; }
 .qk-smart-preview p { margin: 0; color: var(--muted, #52617d); font-size: 0.77rem; line-height: 1.75; }
-.qk-smart-button { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; margin-top: 0.2rem; border: 0; padding: 0; background: transparent; color: #58688e; font: inherit; font-size: 0.73rem; font-weight: 600; cursor: not-allowed; }
+.qk-smart-button { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; margin-top: 0.2rem; border: 0; padding: 0; background: transparent; color: #2f4a7a; font: inherit; font-size: 0.73rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+.qk-smart-button:hover { color: #16233d; }
+.qk-smart-button:focus-visible { outline: 2px solid #2f4a7a; outline-offset: 3px; border-radius: 4px; }
 
 .qk-market-demo {
   min-width: 0;

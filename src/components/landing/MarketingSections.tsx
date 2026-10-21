@@ -5,7 +5,6 @@ import {
   Check,
   FileText,
   HardDrive,
-  LockKeyhole,
   Plus,
   ScanText,
   Search,
@@ -157,18 +156,13 @@ function MarketInsights() {
             <ScanText size={20} strokeWidth={1.6} aria-hidden="true" />
             <div>
               <h3>Isi pesanan, tanpa mengetik ulang.</h3>
-              <p id="qk-smart-unavailable">
-                Smart Input nantinya membantu mengisi detail dari teks pesanan, setelah Anda memeriksanya.
+              <p id="qk-smart-available">
+                Tempel catatan pesanan, periksa usulan isian, lalu terapkan sendiri. Angka yang tidak disebut tidak ditebak.
               </p>
-              <button
-                className="qk-smart-button"
-                type="button"
-                disabled
-                aria-describedby="qk-smart-unavailable"
-              >
-                Smart Input · belum aktif
-                <LockKeyhole size={13} aria-hidden="true" />
-              </button>
+              <a className="qk-smart-button" href="/#quote-builder" aria-describedby="qk-smart-available">
+                Coba Smart Input
+                <ArrowRight size={13} aria-hidden="true" />
+              </a>
             </div>
           </div>
         </div>
