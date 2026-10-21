@@ -6,6 +6,7 @@ import { CloudError } from '../../lib/cloud/quotesApi'
 import { formatIDR } from '../../lib/pricing/format'
 import { newIdempotencyKey } from '../../lib/cloud/useCloudQuotes'
 import type { SaveQuoteSource } from '../../lib/cloud/quoteMapping'
+import { useBilling } from '../../lib/billing/useBilling'
 import { AuthDialog } from './AuthDialog'
 import './cloud.css'
 
@@ -18,6 +19,8 @@ type Props = {
 export function CloudSavePanel({ source, disabledReason }: Props) {
   const { status, user, cloudUnavailable, signOut } = useAuth()
   const { quotes, remaining, loading, error, save, setStatus } = useCloudQuotes()
+  const { status: billing } = useBilling()
+  const quoteLimit = billing?.limits.quotes ?? 5
   const [authOpen, setAuthOpen] = useState(false)
   const [notice, setNotice] = useState('')
   const [failure, setFailure] = useState('')
@@ -46,7 +49,7 @@ export function CloudSavePanel({ source, disabledReason }: Props) {
       setNotice('Penawaran tersimpan di cloud.')
     } catch (cause) {
       if (cause instanceof CloudError && cause.code === 'QUOTA_EXCEEDED') {
-        setFailure('Kuota gratis 5 penawaran bulan ini sudah habis. Data tetap aman di perangkat ini.')
+        setFailure(`Kuota ${quoteLimit} penawaran bulan ini sudah habis. Data tetap aman di perangkat ini.`)
       } else if (cause instanceof CloudError && cause.code === 'AUTH_REQUIRED') {
         setAuthOpen(true)
       } else {
@@ -73,7 +76,7 @@ export function CloudSavePanel({ source, disabledReason }: Props) {
 
       <p className="cloud-copy">
         {signedIn
-          ? `Sisa kuota bulan ini: ${remaining === null ? '—' : `${remaining} dari 5`} penawaran.`
+          ? `Sisa kuota bulan ini: ${remaining === null ? '—' : `${remaining} dari ${quoteLimit}`} penawaran.`
           : 'Opsional. Tanpa akun, penawaran tetap tersimpan di perangkat ini saja.'}
       </p>
 

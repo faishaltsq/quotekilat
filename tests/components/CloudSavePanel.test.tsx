@@ -31,6 +31,10 @@ const save = vi.fn()
 const setStatus = vi.fn()
 const signOut = vi.fn()
 
+vi.mock('../../src/lib/billing/useBilling', () => ({
+  useBilling: () => ({ status: null, loading: false, error: null, reload: () => {} }),
+}))
+
 vi.mock('../../src/lib/cloud/useCloudQuotes', async () => {
   const actual = await vi.importActual<typeof import('../../src/lib/cloud/useCloudQuotes')>(
     '../../src/lib/cloud/useCloudQuotes',
@@ -104,7 +108,7 @@ describe('CloudSavePanel', () => {
     save.mockRejectedValue(new CloudError('QUOTA_EXCEEDED', 'Kuota penyimpanan cloud bulan ini sudah habis.'))
     render(<CloudSavePanel source={source} />, { wrapper: wrap(authValue()) })
     await userEvent.click(screen.getByRole('button', { name: /Simpan ke cloud/i }))
-    expect(await screen.findByText(/Kuota gratis 5 penawaran bulan ini sudah habis/i)).toBeVisible()
+    expect(await screen.findByText(/Kuota 5 penawaran bulan ini sudah habis/i)).toBeVisible()
     expect(screen.getByText(/Data tetap aman di perangkat ini/i)).toBeVisible()
   })
 
