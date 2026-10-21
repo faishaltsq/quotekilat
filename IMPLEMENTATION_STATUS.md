@@ -19,17 +19,17 @@
 | `NODE_ENV=development pnpm install --frozen-lockfile --offline` | Lulus; lockfile konsisten, devDependencies tersedia |
 | `pnpm typecheck` | Lulus |
 | `pnpm lint` | Lulus, 0 error |
-| `pnpm test` | **294 tes lulus, 19 file** |
+| `pnpm test` | **384 tes lulus, 27 file** |
 | `pnpm test:sql` | **37 assertion RLS/grant/kuota lulus** di `postgres:16-alpine` |
 | `pnpm build` | Lulus, produksi statis di `dist/` |
 | `pnpm test:e2e` | **24 tes lulus**, Chromium desktop + emulasi mobile |
 | `pnpm audit --prod` | Tidak ditemukan kerentanan yang diketahui |
 | HTTP preview `/` | 200, title QuoteKilat sesuai |
 | **Produksi** `https://quotekilat.vercel.app` | `/`, `/privacy`, `/terms`, `/pricing`, rute tak dikenal → 200; CSP, HSTS, nosniff, Referrer-Policy, Permissions-Policy aktif; `/assets/*` cache immutable |
-| **Smoke produksi (Chromium)** | Font termuat, harga `Rp 250.000` (qty 1) → `Rp 750.000` (qty 3), dialog preview terbuka dengan total sama, tombol PDF aktif, mobile tanpa overflow, **0 console error, 0 request eksternal** |
+| **Smoke produksi (Chromium)** | Font termuat, harga `Rp 250.000` (qty 1) → `Rp 750.000` (qty 3), pratinjau invoice realtime di kolom ketiga memperbarui total, tombol Unduh PDF aktif, mobile tanpa overflow, **0 console error, 0 request eksternal** |
 | Screenshot desktop/mobile | Disimpan dan ditinjau visual |
 
-E2E mencakup perhitungan fee/diskon, independensi mode, invalid input, keyboard tab, return focus modal, clipboard asli dan fallback, **unduhan PDF aktual beserta ekstraksi teks dan total yang sama dengan layar**, reload/navigasi, opt-in privasi, clear tanpa resurrection, storage failure, teks HTML tidak dieksekusi, tidak ada request API/third-party, dan routing publik. Axe scan landing/preview desktop/mobile: tidak ada pelanggaran otomatis pada aturan WCAG A/AA yang diuji. Viewport 360/390/430/768/1280px tidak overflow horizontal; reduced motion secara eksplisit memverifikasi transform dekoratif `none`.
+E2E mencakup perhitungan fee/diskon, independensi mode, invalid input, keyboard tab, return focus modal, clipboard asli dan fallback, **unduhan PDF aktual beserta ekstraksi teks dan total yang sama dengan layar**, reload/navigasi, opt-in privasi, clear tanpa resurrection, storage failure, teks HTML tidak dieksekusi, tidak ada request API/third-party, dan routing publik. Axe scan landing/pratinjau desktop/mobile: tidak ada pelanggaran otomatis pada aturan WCAG A/AA yang diuji. Viewport 360/390/430/768/1280px tidak overflow horizontal; reduced motion secara eksplisit memverifikasi transform dekoratif `none`.
 
 Screenshot:
 - `test-results/quotekilat-hero-parallax-desktop.png` — hero desktop, tiga sheet terlihat
