@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { MarketingSections } from './MarketingSections'
+
+vi.mock('../../lib/billing/useBilling', () => ({
+  useBilling: () => ({ status: null, loading: false, error: null, reload: () => {} }),
+}))
 
 describe('MarketingSections', () => {
   it('provides the promised landing anchors and a three-step local workflow', () => {
@@ -26,6 +30,7 @@ describe('MarketingSections', () => {
       '—', '—', '—', '—',
     ])
     expect(screen.getByRole('button', { name: /Cek harga pasar/ })).toBeDisabled()
+    expect(screen.getByText(/Butuh paket Pro/)).toBeVisible()
     expect(screen.getByRole('link', { name: /Coba Smart Input/i })).toHaveAttribute('href', '/#quote-builder')
   })
 

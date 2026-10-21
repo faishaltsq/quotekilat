@@ -11,6 +11,7 @@ import {
   Send,
 } from 'lucide-react'
 import { UpgradePanel } from '../billing/UpgradePanel'
+import { useBilling } from '../../lib/billing/useBilling'
 
 const benefits = [
   { icon: Calculator, title: 'Harga lebih terukur', copy: 'Hitung dari biaya dan target margin.' },
@@ -128,6 +129,9 @@ function HowItWorks() {
 }
 
 function MarketInsights() {
+  const { status: billing } = useBilling()
+  const isPro = billing?.plan === 'pro'
+
   return (
     <section className="qk-section qk-insights-section" aria-labelledby="qk-insights-title">
       <div className="container qk-insights-layout">
@@ -140,18 +144,27 @@ function MarketInsights() {
             Market Insights dirancang untuk membandingkan referensi yang punya sumber,
             tanggal, dan spesifikasi yang jelas. Bukan mengganti perhitungan biaya Anda.
           </p>
-          <button
-            className="button button-secondary qk-future-button"
-            type="button"
-            disabled
-            aria-describedby="qk-market-unavailable"
-          >
-            <Search size={17} aria-hidden="true" />
-            Cek harga pasar · belum aktif
-          </button>
-          <p className="qk-future-note" id="qk-market-unavailable">
-            Belum ada pencarian atau koneksi AI di Fase 1.
-          </p>
+          {isPro ? (
+            <a className="button button-secondary qk-future-button" href="/#quote-builder">
+              <Search size={17} aria-hidden="true" />
+              Cek harga pasar
+            </a>
+          ) : (
+            <>
+              <button
+                className="button button-secondary qk-future-button"
+                type="button"
+                disabled
+                aria-describedby="qk-market-unavailable"
+              >
+                <Search size={17} aria-hidden="true" />
+                Cek harga pasar · belum aktif
+              </button>
+              <p className="qk-future-note" id="qk-market-unavailable">
+                Butuh paket Pro. Kuota harga pasar belum aktif di paket gratis.
+              </p>
+            </>
+          )}
 
           <div className="qk-smart-preview">
             <ScanText size={20} strokeWidth={1.6} aria-hidden="true" />
