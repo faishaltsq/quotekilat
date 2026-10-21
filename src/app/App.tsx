@@ -13,7 +13,20 @@ function Navigation() {
   return <header className="site-header"><nav className="container navbar" aria-label="Navigasi utama"><Link className="brand" to="/" aria-label="QuoteKilat beranda"><span className="brand-mark"><Zap size={20} fill="currentColor" /></span>QuoteKilat<span className="brand-beta">BETA</span></Link><div className="nav-links"><a href="/#cara-kerja">Cara kerja</a><a href="/#harga">Harga</a><a href="/#faq">FAQ</a></div>{location.pathname === '/' ? <a href="#quote-builder" className="nav-action">Coba gratis <ArrowUpRight size={15} /></a> : <Link to="/" className="nav-action"><ArrowLeft size={15} /> Kembali</Link>}</nav></header>
 }
 function Footer() { return <footer className="site-footer"><div className="container footer-content"><div><Link to="/" className="brand"><Zap size={19} fill="currentColor" />QuoteKilat</Link><p>Hitung tepat. Tawarkan cepat.</p></div><div className="footer-links"><Link to="/privacy">Privasi</Link><Link to="/terms">Ketentuan</Link><a href="/#quote-builder">Mulai menghitung <ArrowUpRight size={14} /></a></div><p className="footer-note">Dibuat untuk langkah kecil usaha Anda.<br />Guest beta · data tetap di perangkat.</p></div></footer> }
-function Home() { return <><section className="hero"><HeroParallaxLayers /><div className="container hero-layout"><HeroCopy /><QuoteBuilder /></div></section><MarketingSections /></> }
+function Home() {
+  return (
+    <>
+      <section className="hero" aria-labelledby="hero-title">
+        <HeroParallaxLayers />
+        <div className="hero-shell">
+          <HeroCopy />
+          <QuoteBuilder />
+        </div>
+      </section>
+      <MarketingSections />
+    </>
+  )
+}
 function NotFound() { return <div className="container legal-page"><span className="eyebrow">404</span><h1>Halaman tidak ditemukan.</h1><p>Alat hitung Anda tetap tersedia tanpa akun.</p><Link to="/" className="button button-primary">Kembali ke kalkulator</Link></div> }
 function RouteEffects() {
   const { pathname } = useLocation()
