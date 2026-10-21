@@ -23,6 +23,7 @@ create table if not exists storage.objects (id uuid primary key default gen_rand
 
 do $$ begin create role anon; exception when duplicate_object then null; end $$;
 do $$ begin create role authenticated; exception when duplicate_object then null; end $$;
+do $$ begin create role service_role; exception when duplicate_object then null; end $$;
 
 grant usage on schema auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
@@ -35,6 +36,9 @@ grant all on storage.buckets, storage.objects to anon, authenticated;
 alter default privileges in schema public grant all on tables to anon, authenticated;
 alter default privileges in schema public grant execute on functions to anon, authenticated;
 grant usage on schema public to anon, authenticated;
+grant usage on schema public to service_role;
+alter default privileges in schema public grant all on tables to service_role;
+alter default privileges in schema public grant execute on functions to service_role;
 
 create table public.default_grant_probe (id int);
 alter table public.default_grant_probe enable row level security;

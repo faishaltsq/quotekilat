@@ -8,7 +8,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MIGRATIONS="$ROOT/supabase/migrations"
-VERIFY=("$ROOT/supabase/tests/phase2_rls_quota.sql" "$ROOT/supabase/tests/phase3_ai_quota.sql")
+VERIFY=("$ROOT/supabase/tests/phase2_rls_quota.sql" "$ROOT/supabase/tests/phase3_ai_quota.sql" "$ROOT/supabase/tests/phase4_billing.sql")
 SHIM="$ROOT/supabase/tests/shim.sql"
 CONTAINER="quotekilat-sqlgate"
 COMBINED="quotekilat-sqlgate-combined"
