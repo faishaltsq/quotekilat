@@ -72,7 +72,7 @@ diotomasi dari repo):
   sandbox, lalu kembali dan melihat `Paket Pro aktif`.
 - Notifikasi webhook ulang dari dashboard Midtrans: harus menjawab
   `{"applied":false,"reason":"duplicate"}` dan periode tidak bergeser.
-- Penerapan migrasi `0004` ke database live.
+- ~~Penerapan migrasi `0004` ke database live.~~ Selesai 2026-10-22 lewat `supabase/apply-phase4-5.sql`.
 
 Tahapan manual di atas dijalankan setelah env dan migrasi tersedia, dan hasil
 observasinya dicatat di bagian ini — bukan ditebak.

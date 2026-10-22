@@ -1,7 +1,7 @@
 # Status Implementasi QuoteKilat
 
 ## Hasil
-**Phase 1 guest MVP selesai, terverifikasi lokal, dan live di produksi.** Live: https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat . Build statis di `dist/`. Database dan AI aktif (Supabase + DeepSeek). Rute billing (`/api/billing/checkout|status|webhook`) sudah ada di kode dan diuji unit, tetapi belum aktif: butuh env Midtrans serta migrasi `0004_phase4_billing.sql` yang belum diterapkan ke database live.
+**Phase 1 guest MVP selesai, terverifikasi lokal, dan live di produksi.** Live: https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat . Build statis di `dist/`. Database dan AI aktif (Supabase + DeepSeek). Rute billing (`/api/billing/checkout|status|webhook`) sudah ada di kode dan diuji unit, tetapi belum aktif: env Midtrans belum diisi. Migrasi Phase 4 dan Phase 5 SUDAH diterapkan ke database live (diverifikasi 2026-10-22: `billing_orders`, `billing_events`, `entitlements`, `plan_prices`, `market_research_log` ada; tabel karangan mengembalikan 404 sebagai kontrol).
 
 ## Fitur yang berfungsi
 - Landing responsif dengan builder nyata di hero, Barang/Jasa/Custom, contoh berlabel, input dinamis, dan state biaya/jumlah independen antar-mode.
