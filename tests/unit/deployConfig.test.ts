@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const root = resolve(__dirname, '../..')
@@ -137,26 +137,38 @@ describe('phase 3 secret boundary', () => {
 })
 
 /**
- * The platform builder emitted ESM for the function while the generated
- * /var/task/package.json carried no module type, so every request died with
- * "Cannot use import statement outside a module". The route is now a committed
- * .cjs shim over a CommonJS build, and these assertions keep it that way: the
- * failure mode is invisible locally and only shows up as a 500 in production.
+ * The platform generates /var/task/package.json from the app root, which
+ * declares "type": "module". A .js entry under api/ is therefore loaded as an
+ * ES module and dies with "require is not defined in ES module scope" — a 500
+ * that is invisible locally. A .cjs entry is CommonJS regardless of
+ * package.json, so every route is committed with that extension. These
+ * assertions enumerate api/ rather than naming one file, because the earlier
+ * single-file guard stayed green while five later routes shipped broken.
  */
 describe('api function module format', () => {
   const vercel = JSON.parse(read('vercel.json')) as { functions: Record<string, unknown> }
+  const entries = readdirSync(resolve(root, 'api'), { recursive: true })
+    .map((file) => `api/${String(file)}`.split(String.fromCharCode(92)).join('/'))
+    .filter((file) => /\.(js|cjs|mjs)$/.test(file))
+    .sort()
 
   it('routes the function glob at the .cjs entry, not the TypeScript source', () => {
     const patterns = Object.keys(vercel.functions)
-    expect(patterns).toContain('api/**/*.js')
+    expect(patterns).toContain('api/**/*.cjs')
     expect(patterns.some((pattern) => pattern.endsWith('.ts'))).toBe(false)
   })
 
-  it('the entry file is CommonJS and requires the compiled build', () => {
-    const entry = read('api/ai/parse.js')
-    expect(entry).toContain("require('../../vercel-api/server/ai/parse.js')")
-    expect(entry).toContain('module.exports')
-    expect(entry).not.toMatch(/^import /m)
+  it('covers every route actually deployed', () => {
+    expect(entries.length).toBeGreaterThan(0)
+  })
+
+  it.each(entries)('%s is a CommonJS shim over the compiled build', (entry) => {
+    const source = read(entry)
+    expect(entry.endsWith('.cjs')).toBe(true)
+    expect(source).toContain("require('../../vercel-api/")
+    expect(source).toContain('module.exports')
+    expect(source).not.toMatch(/^import /m)
+    expect(source).not.toMatch(/^export /m)
   })
 
   it('the api tsconfig emits CommonJS outside the app build', () => {

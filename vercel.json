@@ -6,7 +6,7 @@
   "installCommand": "NODE_ENV=development pnpm install --frozen-lockfile",
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
   "functions": {
-    "api/**/*.js": {
+    "api/**/*.cjs": {
       "maxDuration": 30
     }
   },
