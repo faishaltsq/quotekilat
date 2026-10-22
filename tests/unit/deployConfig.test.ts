@@ -152,9 +152,9 @@ describe('api function module format', () => {
     .filter((file) => /\.(js|cjs|mjs)$/.test(file))
     .sort()
 
-  it('routes the function glob at the .cjs entry, not the TypeScript source', () => {
+  it('routes the function glob at the .js entry, not the TypeScript source', () => {
     const patterns = Object.keys(vercel.functions)
-    expect(patterns).toContain('api/**/*.cjs')
+    expect(patterns).toContain('api/**/*.js')
     expect(patterns.some((pattern) => pattern.endsWith('.ts'))).toBe(false)
   })
 
@@ -162,13 +162,13 @@ describe('api function module format', () => {
     expect(entries.length).toBeGreaterThan(0)
   })
 
-  it.each(entries)('%s is a CommonJS shim over the compiled build', (entry) => {
+  it.each(entries)('%s is an ES module re-exporting the compiled build', (entry) => {
     const source = read(entry)
-    expect(entry.endsWith('.cjs')).toBe(true)
-    expect(source).toContain("require('../../vercel-api/")
-    expect(source).toContain('module.exports')
-    expect(source).not.toMatch(/^import /m)
-    expect(source).not.toMatch(/^export /m)
+    expect(entry.endsWith('.js')).toBe(true)
+    expect(source).toContain("from '../../vercel-api/server/")
+    expect(source).toMatch(/^export default /m)
+    expect(source).not.toContain('module.exports')
+    expect(source).not.toMatch(/^\s*require\(/m)
   })
 
   it('the api tsconfig emits CommonJS outside the app build', () => {
