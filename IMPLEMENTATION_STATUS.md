@@ -50,7 +50,8 @@ Screenshot:
 - Dependencies terkunci dengan pnpm; resolver v5 dipilih karena resolver v6 menimbulkan konflik optional peers pada npm. TypeScript 6.0.3 mengikuti dukungan typescript-eslint; script test/dev mengatur NODE_ENV eksplisit agar shell production tidak memuat React production dalam tes komponen.
 
 ## Phase 2 — cloud workspace (live dan terverifikasi end-to-end)
-- Project Supabase: `xirgtbnvthgjrvgnfrsg` (akun terpisah dari MCP). Migrasi diterapkan lewat `supabase/apply-all.sql`.
+- Project Supabase: `xirgtbnvthgjrvgnfrsg` (akun terpisah dari MCP).
+- Migrasi: `supabase/apply-all.sql` HANYA untuk database kosong — `0001` membuat `public.profiles` tanpa `if not exists`, jadi di database yang sudah berjalan ia berhenti dengan `42P07 relation "profiles" already exists`. Untuk database yang sudah berisi skema Phase 2/3, jalankan `supabase/apply-phase4-5.sql` (hanya Phase 4 + Phase 5, idempoten, aman diulang).
 - Env Vercel Production: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Tidak ada secret key di bundle atau repo (diverifikasi dengan grep, bukan diasumsikan).
 - Auth Supabase hanya diminta saat aksi yang memang butuh cloud; halaman tidak pernah memasang auth wall. Nol request ke Supabase sebelum pengguna berinteraksi.
 - Migrasi `0001`/`0002` + gate `pnpm test:sql` (37 assertion) membuktikan RLS, grant sempit, FK lintas-tenant, dan kuota atomik 5/bulan.

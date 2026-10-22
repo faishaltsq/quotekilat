@@ -34,7 +34,10 @@ peningkatan optimis. `redirectUrl` yang bukan `https://` ditolak sebelum
    - `SUPABASE_SERVICE_ROLE_KEY` — kunci service-role Supabase; hanya boleh ada
      di env server, tidak pernah di bundel klien (`VITE_`).
 2. **Migrasi `0004_phase4_billing.sql`** diterapkan ke database live.
-   Migrasi ini idempoten (aman dijalankan berulang), dan `supabase/apply-all.sql`
+   Migrasi ini idempoten (aman dijalankan berulang). Di database yang sudah berisi
+   skema Phase 2/3, pakai `supabase/apply-phase4-5.sql` — bukan `apply-all.sql`,
+   yang membuat `profiles` tanpa `if not exists` dan gagal dengan `42P07`.
+   Berkas gabungan lama tetap benar untuk database kosong, dan `supabase/apply-all.sql`
    sudah memuat salinannya untuk penerapan penuh.
 3. **Redeploy** setelah kedua langkah di atas, karena rute baru hidup sebagai
    fungsi `api/billing/*.js`.
