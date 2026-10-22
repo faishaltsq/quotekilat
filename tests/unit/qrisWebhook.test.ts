@@ -11,8 +11,11 @@ function makeDeps(overrides: {
   calls?: string[]
 } = {}): QrisWebhookDeps {
   const calls = overrides.calls ?? []
-  const order = overrides.order === undefined ? { qris_signature: 'sig-abc', status: 'pending', total_idr: 59042, amount_idr: 59000 } : overrides.order
-  const fetchImpl = vi.fn(async (input: string | URL | Request) => {
+  const rpcCalls: Record<string, unknown>[] = []
+  const order = overrides.order === undefined
+    ? { qris_signature: 'sig-abc', status: 'pending', total_idr: 59042, amount_idr: 59000 }
+    : overrides.order
+  const fetchImpl = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input)
     if (url.includes('/rest/v1/billing_orders')) {
       calls.push('read_order')
@@ -21,13 +24,20 @@ function makeDeps(overrides: {
     }
     if (url.includes('/rest/v1/rpc/')) {
       calls.push(url.split('/').pop() as string)
+      rpcCalls.push(JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>)
       const r = overrides.rpc?.() ?? { ok: true, status: 200, data: [{ applied: true, plan: 'pro', reason: null }] }
       return { ok: r.ok, status: r.status, json: async () => r.data } as Response
     }
     calls.push('unknown:' + url)
     return { ok: false, status: 404, json: async () => ({}) } as Response
   }) as unknown as typeof fetch
-  return { fetch: fetchImpl, env: {} as NodeJS.ProcessEnv, service, qris: { apiKey: 'k', merchantId: 'm', isProduction: false } }
+  return {
+    fetch: fetchImpl,
+    env: {} as NodeJS.ProcessEnv,
+    service,
+    qris: { apiKey: 'k', merchantId: 'm', isProduction: false },
+    rpcCalls,
+  } as QrisWebhookDeps & { rpcCalls?: Record<string, unknown>[] }
 }
 
 const paid = {
@@ -40,6 +50,34 @@ const paid = {
 }
 
 describe('handleQrisWebhook', () => {
+  it('reads paid_at, the field the live webhook actually sends', async () => {
+    // Captured from KlikQRIS: the payment timestamp is paid_at and amounts are
+    // decimal strings. payment_date does not exist; losing it meant every
+    // settlement recorded now() instead of the real payment time.
+    const calls: string[] = []
+    const deps = makeDeps({
+      calls,
+      order: { qris_signature: 'sig-abc', status: 'pending', total_idr: 59565, amount_idr: 59000 },
+    })
+    const outcome = await handleQrisWebhook(
+      {
+        body: {
+          order_id: 'QK-20261022-ABCDEFGHIJ',
+          status: 'PAID',
+          total_amount: '59565.00',
+          signature: 'sig-abc',
+          paid_at: '2026-10-22 16:30:00',
+        },
+      },
+      deps,
+    )
+    expect(outcome.status).toBe(200)
+    expect(calls).toEqual(['read_order', 'apply_qris_event'])
+    const rpc = (deps as unknown as { rpcCalls?: Record<string, unknown>[] }).rpcCalls?.[0]
+    // paid_at is WIB wall-clock, so 16:30:00 local is 09:30Z.
+    expect(rpc?.p_paid_at).toBe('2026-10-22T09:30:00.000Z')
+  })
+
   it('answers 503 when the gateway is not configured', async () => {
     const outcome = await handleQrisWebhook({ body: paid }, { ...makeDeps(), qris: null })
     expect(outcome.status).toBe(503)

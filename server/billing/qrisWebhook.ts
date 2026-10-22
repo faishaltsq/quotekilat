@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto'
-import { readQrisEnv, type QrisEnv } from '../_lib/qris'
+import { parseGatewayTimestamp, readQrisEnv, type QrisEnv } from '../_lib/qris'
 import { callRpcAsService, readServiceConfig, type ServerConfig } from '../_lib/supabase'
 
 export type QrisWebhookDeps = {
@@ -17,6 +17,7 @@ type Notification = {
   total_amount?: unknown
   amount?: unknown
   signature?: unknown
+  paid_at?: unknown
   payment_date?: unknown
   transaction_id?: unknown
   data?: Record<string, unknown>
@@ -36,7 +37,11 @@ function normalise(body: Notification | null) {
   const rawTotal = body?.total_amount ?? nested.total_amount ?? body?.amount ?? nested.amount_paid ?? nested.amount
   const totalAmount = Number(rawTotal ?? 0)
   const signature = str(body?.signature) || str(nested.signature)
-  const paidAt = str(body?.payment_date) || str(nested.payment_date)
+  // The live gateway sends paid_at (WIB wall-clock); payment_date does not
+  // exist, but is kept as a fallback so an older payload still records a time.
+  const paidAt = parseGatewayTimestamp(
+    body?.paid_at ?? nested.paid_at ?? body?.payment_date ?? nested.payment_date,
+  )
   const gatewayRef = str(body?.transaction_id) || str(nested.transaction_id)
   return { orderId, status, totalAmount, signature, paidAt, gatewayRef }
 }

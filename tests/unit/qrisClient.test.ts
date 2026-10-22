@@ -89,8 +89,41 @@ describe('createQrisTransaction', () => {
       expect(outcome.session.uniqueCode).toBe(42)
       expect(outcome.session.signature).toBe('sig-abc')
       expect(outcome.session.imageUrl).toBe('https://klikqris.test/qr/1.png')
-      expect(outcome.session.expiredAt).toBe('2026-10-22T08:30:00Z')
+      expect(outcome.session.expiredAt).toBe('2026-10-22T08:30:00.000Z')
     }
+  })
+
+  it('normalises the gateway shape captured from a live sandbox response', async () => {
+    // Copied verbatim from a real POST /qris/create response (2026-10-22):
+    // amounts are decimal strings, expired_at is WIB wall-clock with no zone.
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        status: true,
+        message: 'Transaction Created Successfully',
+        data: {
+          order_id: 'QK-20261022-ABCDEFGHIJ',
+          amount: '59000.00',
+          amount_uniq: '565.00',
+          total_amount: '59565.00',
+          status: 'PENDING',
+          qris_url: 'https://klikqris.com/storage/qris_api/qris_X.png',
+          qris_image: 'data:image/png;base64,AAA',
+          expired_at: '2026-10-22 17:19:15',
+          signature: 'ygzOPsMVszrJY6AR5nFCX3gLsRkMfP1792660756',
+        },
+      }),
+    }) as Response)
+    const outcome = await createQrisTransaction(request, env, fetchImpl as unknown as typeof fetch)
+    expect(outcome.ok).toBe(true)
+    if (!outcome.ok) return
+    expect(outcome.session.totalIdr).toBe(59565)
+    expect(outcome.session.uniqueCode).toBe(565)
+    expect(outcome.session.amountIdr).toBe(59000)
+    // 17:19:15 WIB is 10:19:15Z; a naive read would store 17:19Z and keep a
+    // dead QR payable for seven extra hours.
+    expect(outcome.session.expiredAt).toBe('2026-10-22T10:19:15.000Z')
   })
 
   it('reports a gateway rejection instead of throwing', async () => {

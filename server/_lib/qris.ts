@@ -20,6 +20,33 @@ export function readQrisEnv(env: NodeJS.ProcessEnv = process.env): QrisEnv | nul
 export const qrisBaseUrl = (env: QrisEnv): string =>
   env.isProduction ? 'https://klikqris.com/api' : 'https://klikqris.com/api/sandbox'
 
+/**
+ * The gateway returns `expired_at` as WIB wall-clock ("2026-10-22 17:19:15")
+ * with no zone, and amounts as decimal strings ("59565.00"). Storing the
+ * timestamp as-is would make Postgres read it as UTC, so a dead QR code would
+ * stay payable for seven extra hours.
+ */
+const WIB_OFFSET_MS = -7 * 60 * 60 * 1000 // UTC+7
+
+export function parseGatewayTimestamp(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null
+  const raw = value.trim()
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/.exec(raw)
+  if (!m) {
+    // Already carries a zone (or is malformed): let Date judge it.
+    const parsed = new Date(raw)
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+  }
+  const [, y, mo, d, h, mi, s] = m.map(Number) as unknown as number[]
+  const wallMs = Date.UTC(y!, (mo ?? 1) - 1, d ?? 1, h ?? 0, mi ?? 0, s ?? 0)
+  return new Date(wallMs + WIB_OFFSET_MS).toISOString()
+}
+
+const toIdr = (value: unknown): number => {
+  const n = Number(value)
+  return Number.isFinite(n) ? Math.round(n) : NaN
+}
+
 export type QrisSession = {
   orderId: string
   amountIdr: number
@@ -97,8 +124,8 @@ export async function createQrisTransaction(
   const signature = typeof data.signature === 'string' ? data.signature : ''
   if (!signature) return { ok: false, kind: 'shape', detail: 'missing signature' }
 
-  const amountIdr = Number(data.amount ?? request.amountIdr)
-  const totalIdr = Number(data.total_amount ?? amountIdr)
+  const amountIdr = toIdr(data.amount ?? request.amountIdr)
+  const totalIdr = toIdr(data.total_amount ?? amountIdr)
   if (!Number.isFinite(totalIdr) || totalIdr < amountIdr) return { ok: false, kind: 'shape', detail: 'bad total' }
 
   return {
@@ -111,7 +138,7 @@ export async function createQrisTransaction(
       status: typeof data.status === 'string' ? data.status : 'PENDING',
       imageUrl: typeof data.qris_url === 'string' ? data.qris_url : '',
       payload: typeof data.qris_image === 'string' ? data.qris_image : '',
-      expiredAt: typeof data.expired_at === 'string' ? data.expired_at : null,
+      expiredAt: parseGatewayTimestamp(data.expired_at),
       signature,
     },
   }
