@@ -32,12 +32,12 @@ insert into public._r select 'a new order starts pending at the plan price',
   (select status = 'pending' and amount_idr = 59000 from _ord), (select amount_idr::text from _ord);
 
 -- ── attach a QRIS session: the gateway adds a unique code ──────────────────
-select set_config('request.jwt.claim.sub', '99999999-9999-9999-9999-999999999999', false);
-set role authenticated;
+-- Attaching is a server act since phase 7: the checkout route calls it with the
+-- service key, because writing the signature and total is what authorises a
+-- payment. Running it as `authenticated` here would (correctly) be refused.
 select public.attach_qris_session(
   (select order_id from _ord), 'sig-abc123', '00020101021226...', 'https://qr.example/1.png',
   59042, now() + interval '30 minutes');
-reset role;
 
 insert into public._r select 'the session stores the exact total, not the plan price',
   (select total_idr = 59042 from public.billing_orders

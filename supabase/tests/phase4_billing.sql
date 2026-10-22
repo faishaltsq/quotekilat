@@ -17,10 +17,15 @@ insert into public._r
 select 'anon cannot select billing_orders',
        not has_table_privilege('anon', 'public.billing_orders', 'SELECT'), null;
 insert into public._r
-select 'authenticated may only select billing_orders',
-       has_table_privilege('authenticated', 'public.billing_orders', 'SELECT')
-   and not has_table_privilege('authenticated', 'public.billing_orders', 'INSERT')
-   and not has_table_privilege('authenticated', 'public.billing_orders', 'UPDATE'), null;
+select 'authenticated may only read some billing_orders columns',
+       -- Phase 7 narrowed this from a table grant to a column list, so the
+       -- signature and snap_token stop being readable. The write privileges
+       -- must still be absent.
+       not has_table_privilege('authenticated', 'public.billing_orders', 'INSERT')
+   and not has_table_privilege('authenticated', 'public.billing_orders', 'UPDATE')
+   and not has_table_privilege('authenticated', 'public.billing_orders', 'DELETE')
+   and has_column_privilege('authenticated', 'public.billing_orders', 'status', 'SELECT')
+   and not has_column_privilege('authenticated', 'public.billing_orders', 'qris_signature', 'SELECT'), null;
 insert into public._r
 select 'authenticated has no access to billing_events',
        not has_table_privilege('authenticated', 'public.billing_events', 'SELECT')

@@ -2,7 +2,7 @@ import { useContext, useState } from 'react'
 import { ArrowRight, Loader2, RefreshCw } from 'lucide-react'
 import { AuthContext } from '../../lib/cloud/authContext'
 import { useBilling } from '../../lib/billing/useBilling'
-import { startCheckout, type QrisSession } from '../../lib/billing/client'
+import { startCheckout, settlePayment, type QrisSession } from '../../lib/billing/client'
 import { track } from '../../lib/analytics/track'
 import './billing.css'
 
@@ -24,6 +24,7 @@ export function UpgradePanel() {
   const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
   const [session, setSession] = useState<QrisSession | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
 
   const signedIn = authStatus === 'signed-in'
   const plan = billing?.plan ?? 'free'
@@ -45,18 +46,41 @@ export function UpgradePanel() {
         return
       }
       track('checkout_started', { plan: 'pro' })
+      setOrderId(result.orderId)
       setSession(result.qris)
     } finally {
       setBusy(false)
     }
   }
 
-  // The plan only changes once the gateway calls the webhook, so a scan cannot
-  // flip the UI by itself: the buyer re-checks, and the server is the only source.
+  // The buyer only asks the server to check; the server asks the gateway. This
+  // panel never flips the plan itself, and a gateway that still says PENDING
+  // leaves the page exactly where it was.
   const checkAgain = async () => {
+    if (!client || !orderId) return
+    setError('')
     setChecking(true)
     try {
-      await reload()
+      const { data } = await client.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) {
+        setError('Sesi berakhir. Masuk lagi.')
+        return
+      }
+      const result = await settlePayment({ token, orderId })
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+      if (result.plan === 'pro') {
+        await reload()
+        return
+      }
+      if (result.status === 'EXPIRED') {
+        setError('Kode QRIS sudah kedaluwarsa. Buat pesanan baru.')
+        return
+      }
+      setError('Pembayaran belum terdeteksi. Tunggu sebentar lalu periksa lagi.')
     } finally {
       setChecking(false)
     }
@@ -104,7 +128,7 @@ export function UpgradePanel() {
           {checking ? <><Loader2 size={16} className="spin" /> Memeriksa…</> : <><RefreshCw size={16} aria-hidden="true" /> Saya sudah bayar</>}
         </button>
         <p className="billing-note">
-          Paket aktif setelah pembayaran terverifikasi. Halaman ini tidak pernah mengaktifkan Pro sendiri.
+          Paket aktif setelah pembayaran terverifikasi ke penyedia pembayaran. Halaman ini tidak pernah mengaktifkan Pro sendiri.
         </p>
         {error && <p className="billing-error" role="alert">{error}</p>}
       </div>

@@ -39,6 +39,53 @@ const codeFrom = (body: unknown, status: number): BillingErrorCode => {
   return 'unknown'
 }
 
+export type SettleResult =
+  | { ok: true; applied: boolean; plan: BillingPlan; status: string; reason: string | null }
+  | Failure
+
+/**
+ * Asks the server to check the payment with the gateway. The browser sends only
+ * the order id: whether the money arrived, and how much, is decided by the
+ * gateway and re-checked against the order on the server. A success here with
+ * `applied: false` means "not paid yet", not "upgraded".
+ */
+export async function settlePayment(input: {
+  token: string
+  orderId: string
+  fetchImpl?: typeof fetch
+}): Promise<SettleResult> {
+  const doFetch = input.fetchImpl ?? fetch
+  let response: Response
+  try {
+    response = await doFetch('/api/billing/settle', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${input.token}` },
+      body: JSON.stringify({ orderId: input.orderId }),
+    })
+  } catch {
+    return { ok: false, code: 'offline', message: MESSAGES.offline }
+  }
+
+  const body = (await response.json().catch(() => null)) as
+    | { applied?: boolean; plan?: string; status?: string; reason?: string | null; error?: { code?: string; message?: string } }
+    | null
+
+  if (!response.ok) {
+    const code = codeFrom(body, response.status)
+    // The route explains a mismatch better than the generic message can.
+    const detail = typeof body?.error?.message === 'string' ? body.error.message : MESSAGES[code]
+    return { ok: false, code, message: detail }
+  }
+
+  return {
+    ok: true,
+    applied: body?.applied === true,
+    plan: body?.plan === 'pro' ? 'pro' : 'free',
+    status: typeof body?.status === 'string' ? body.status : 'PENDING',
+    reason: typeof body?.reason === 'string' ? body.reason : null,
+  }
+}
+
 export async function fetchBillingStatus(input: {
   token: string
   fetchImpl?: typeof fetch
@@ -70,7 +117,7 @@ export async function fetchBillingStatus(input: {
 /**
  * Starts a QRIS payment. Unlike a hosted checkout there is nowhere to navigate:
  * the caller renders the QR and polls the plan, because the plan only changes
- * when the gateway's webhook lands.
+ * when the server has confirmed the payment with the gateway.
  */
 export async function startCheckout(input: {
   token: string

@@ -1,10 +1,12 @@
 import { createQrisTransaction, readQrisEnv, type QrisEnv } from '../_lib/qris'
-import { callRpc, readCaller, readServerConfig, type ServerConfig } from '../_lib/supabase'
+import { callRpc, callRpcAsService, readCaller, readServerConfig, readServiceConfig, type ServerConfig } from '../_lib/supabase'
 
 export type CheckoutDeps = {
   fetch: typeof fetch
   env: NodeJS.ProcessEnv
   config: ServerConfig | null
+  /** Service config: the only role allowed to attach a QRIS session. */
+  service: ServerConfig | null
   qris: QrisEnv | null
 }
 
@@ -62,10 +64,13 @@ export async function handleCheckout(
     return error(502, 'upstream', 'Penyedia pembayaran sedang tidak tersedia.')
   }
 
-  // Store the signature and the exact total so the webhook can verify a
-  // notification later even if the browser never comes back. A failure here is
-  // not fatal: the order still exists, and the buyer can retry.
-  await callRpc(
+  // Store the signature and the exact total so a later settlement can verify
+  // the gateway's answer. This uses the service key, not the buyer's token: the
+  // buyer is no longer allowed to write these fields, because writing them is
+  // what authorises a payment.
+  if (!deps.service) return error(503, 'disabled', 'Billing belum aktif di server ini.')
+
+  const attached = await callRpcAsService(
     'attach_qris_session',
     {
       p_order_id: order.order_id,
@@ -75,10 +80,15 @@ export async function handleCheckout(
       p_total_idr: outcome.session.totalIdr,
       p_expired_at: outcome.session.expiredAt,
     },
-    token,
-    deps.config,
+    deps.service,
     deps.fetch,
   )
+
+  // Without a stored signature the buyer would pay into an order that can never
+  // be settled, so this is a hard failure rather than a warning.
+  if (!attached.ok) {
+    return error(502, 'upstream', 'Gagal menyiapkan pembayaran. Coba lagi.')
+  }
 
   return {
     status: 200,
@@ -119,6 +129,7 @@ export default async function handler(request: Request): Promise<Response> {
       fetch,
       env: process.env,
       config: readServerConfig(),
+      service: readServiceConfig(),
       qris: readQrisEnv(),
     },
   )

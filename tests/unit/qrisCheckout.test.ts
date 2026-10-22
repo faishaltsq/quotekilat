@@ -54,6 +54,7 @@ function makeDeps(overrides: {
     fetch: fetchImpl,
     env: {} as NodeJS.ProcessEnv,
     config,
+    service: { url: 'https://abcd.supabase.co', key: 'service-key' },
     qris: overrides.qrisEnv === undefined ? qris : overrides.qrisEnv,
   }
 }
