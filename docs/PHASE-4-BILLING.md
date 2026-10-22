@@ -10,8 +10,8 @@ dijalankan.
 | --- | --- | --- |
 | Rute `POST /api/billing/checkout` | `server/billing/checkout.ts`, shim `api/billing/checkout.js` | `tests/unit/billingCheckout.test.ts` (6) |
 | Rute `GET /api/billing/status` | `server/billing/status.ts`, shim `api/billing/status.js` | `tests/unit/billingCheckout.test.ts` |
-| Rute `POST /api/billing/webhook` (Midtrans) | `server/billing/webhook.ts`, shim `api/billing/webhook.js` | `tests/unit/billingWebhook.test.ts` (8) |
-| Parser/penghitung Midtrans | `server/_lib/midtrans.ts` | `tests/unit/midtrans.test.ts` (10) |
+| Rute `POST /api/billing/webhook` (KlikQRIS) | `server/billing/qrisWebhook.ts`, shim `api/billing/webhook.js` | `tests/unit/qrisWebhook.test.ts` (11) |
+| Klien KlikQRIS | `server/_lib/qris.ts` | `tests/unit/qrisClient.test.ts` (10) |
 | Adapter Node untuk semua rute Vercel | `server/_lib/nodeEntry.ts` | `tests/unit/nodeEntry.test.ts` (3) |
 | Pemanggil RPC ber-otorisasi pemakai & service-role | `server/_lib/supabase.ts` | — |
 | Klien browser (baca status, mulai checkout) | `src/lib/billing/client.ts` | `tests/unit/billingClient.test.ts` (5) |
@@ -28,9 +28,9 @@ peningkatan optimis. `redirectUrl` yang bukan `https://` ditolak sebelum
 ## Prasyarat deploy — billing tidak aktif tanpa ini
 
 1. **Env Vercel** (isi dari `.env.server.example`, sisi server saja):
-   - `MIDTRANS_SERVER_KEY`
-   - `MIDTRANS_CLIENT_KEY`
-   - `MIDTRANS_IS_PRODUCTION` (`false` untuk sandbox)
+   - `KLIKQRIS_API_KEY`
+   - `KLIKQRIS_MERCHANT_ID`
+   - `KLIKQRIS_ENV` (kosong untuk sandbox)
    - `SUPABASE_SERVICE_ROLE_KEY` — kunci service-role Supabase; hanya boleh ada
      di env server, tidak pernah di bundel klien (`VITE_`).
 2. **Migrasi `0004_phase4_billing.sql`** diterapkan ke database live.
@@ -64,13 +64,13 @@ Sudah dijalankan dan lulus:
 - `pnpm test:e2e`: **26 lulus** (24 sebelumnya + 2 assertion baru bahwa tidak ada
   request `/api/analytics/collect` sebelum pilihan consent).
 
-Belum dijalankan (butuh akses dashboard Midtrans dan database live, tidak bisa
+Belum dijalankan (butuh akses dashboard KlikQRIS dan database live, tidak bisa
 diotomasi dari repo):
 
 - Pembayaran sandbox end-to-end: klik `Coba Pro (sandbox)`, mendarat di
   `app.sandbox.midtrans.com` dengan nilai Rp59.000, membayar dengan instrumen
   sandbox, lalu kembali dan melihat `Paket Pro aktif`.
-- Notifikasi webhook ulang dari dashboard Midtrans: harus menjawab
+- Notifikasi webhook ulang dari dashboard KlikQRIS: harus menjawab
   `{"applied":false,"reason":"duplicate"}` dan periode tidak bergeser.
 - ~~Penerapan migrasi `0004` ke database live.~~ Selesai 2026-10-22 lewat `supabase/apply-phase4-5.sql`.
 

@@ -293,7 +293,7 @@ export function PricingPlans() {
               <PlanFeature future>Preset dan daftar pelanggan</PlanFeature>
               <PlanFeature future>AI berkuota, setelah siap</PlanFeature>
             </ul>
-            <p className="qk-plan-unavailable">Pembayaran uji coba lewat Midtrans sandbox</p>
+            <p className="qk-plan-unavailable">Pembayaran QRIS uji coba lewat KlikQRIS sandbox</p>
           </article>
         </div>
         <UpgradePanel />

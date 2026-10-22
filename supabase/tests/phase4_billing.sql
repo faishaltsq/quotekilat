@@ -32,14 +32,16 @@ select 'authenticated may only select entitlements',
 insert into public._r
 select 'anon cannot execute create_billing_order',
        not has_function_privilege('anon', 'public.create_billing_order(text)', 'EXECUTE'), null;
+-- Phase 6 replaced the Midtrans notification function with the QRIS one; the
+-- grant boundary is the same, so it is asserted here against the live name.
 insert into public._r
-select 'authenticated cannot execute apply_billing_event',
+select 'authenticated cannot execute apply_qris_event',
        not has_function_privilege('authenticated',
-         'public.apply_billing_event(text,text,text,text,text,text,text)', 'EXECUTE'), null;
+         'public.apply_qris_event(text,text,bigint,timestamptz,text)', 'EXECUTE'), null;
 insert into public._r
-select 'service_role may execute apply_billing_event',
+select 'service_role may execute apply_qris_event',
        has_function_privilege('service_role',
-         'public.apply_billing_event(text,text,text,text,text,text,text)', 'EXECUTE'), null;
+         'public.apply_qris_event(text,text,bigint,timestamptz,text)', 'EXECUTE'), null;
 insert into public._r
 select 'anon cannot execute billing_status',
        not has_function_privilege('anon', 'public.billing_status()', 'EXECUTE'), null;
@@ -71,7 +73,7 @@ insert into public.billing_orders (owner_id, order_id, plan, amount_idr)
 values ('55555555-5555-5555-5555-555555555555', 'QK-20260101-TEST000001', 'pro', 59000);
 
 create temp table _settle as
-  select * from public.apply_billing_event('QK-20260101-TEST000001', 'settlement', '200', '59000.00', '', 'txn-1', 'qris');
+  select * from public.apply_qris_event('QK-20260101-TEST000001', 'PAID', 59000, now(), 'txn-1');
 
 insert into public._r select 'a valid settlement is applied',
   (select applied from _settle), (select reason from _settle);
@@ -100,7 +102,7 @@ create temp table _period_before as
    where owner_id = '55555555-5555-5555-5555-555555555555';
 
 create temp table _replay as
-  select * from public.apply_billing_event('QK-20260101-TEST000001', 'settlement', '200', '59000.00', '', 'txn-1', 'qris');
+  select * from public.apply_qris_event('QK-20260101-TEST000001', 'PAID', 59000, now(), 'txn-1');
 
 insert into public._r select 'replaying the same event is refused',
   (select not applied from _replay), (select reason from _replay);
@@ -113,7 +115,7 @@ insert into public._r select 'replay did not extend the paid period',
 
 -- ── a forged amount is refused ─────────────────────────────────────────────
 create temp table _forged as
-  select * from public.apply_billing_event('QK-20260101-TEST000001', 'settlement', '200', '1000.00', '', 'txn-2', 'qris');
+  select * from public.apply_qris_event('QK-20260101-TEST000001', 'PAID', 1000, now(), 'txn-2');
 
 insert into public._r select 'a mismatched gross amount is refused',
   (select not applied from _forged), (select reason from _forged);
@@ -122,7 +124,7 @@ insert into public._r select 'a mismatched amount is named as such',
 
 -- ── an unknown order is refused, not silently accepted ─────────────────────
 create temp table _unknown as
-  select * from public.apply_billing_event('QK-20260101-NOSUCHORDER', 'settlement', '200', '59000.00', '', 'txn-3', 'qris');
+  select * from public.apply_qris_event('QK-20260101-NOSUCHORDER', 'PAID', 59000, now(), 'txn-3');
 
 insert into public._r select 'an unknown order id is refused',
   (select not applied from _unknown) and (select reason from _unknown) = 'unknown_order', (select reason from _unknown);

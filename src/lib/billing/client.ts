@@ -11,6 +11,16 @@ export type BillingErrorCode = 'unauthorized' | 'disabled' | 'upstream' | 'inval
 
 type Failure = { ok: false; code: BillingErrorCode; message: string }
 
+/** What the buyer needs to pay: a QR to scan in place, and the exact total. */
+export type QrisSession = {
+  imageUrl: string
+  payload: string
+  amountIdr: number
+  uniqueCode: number
+  totalIdr: number
+  expiredAt: string | null
+}
+
 const MESSAGES: Record<BillingErrorCode, string> = {
   unauthorized: 'Masuk dulu untuk melihat status langganan.',
   disabled: 'Langganan belum aktif di server ini.',
@@ -57,11 +67,16 @@ export async function fetchBillingStatus(input: {
   return { ok: true, status: parsed }
 }
 
+/**
+ * Starts a QRIS payment. Unlike a hosted checkout there is nowhere to navigate:
+ * the caller renders the QR and polls the plan, because the plan only changes
+ * when the gateway's webhook lands.
+ */
 export async function startCheckout(input: {
   token: string
   plan: BillingPlan
   fetchImpl?: typeof fetch
-}): Promise<{ ok: true; orderId: string; redirectUrl: string } | Failure> {
+}): Promise<{ ok: true; orderId: string; qris: QrisSession } | Failure> {
   const doFetch = input.fetchImpl ?? fetch
   let response: Response
   try {
@@ -75,7 +90,7 @@ export async function startCheckout(input: {
   }
 
   const body = (await response.json().catch(() => null)) as
-    | { orderId?: string; redirectUrl?: string; error?: { code?: string } }
+    | { orderId?: string; qris?: Partial<QrisSession>; error?: { code?: string } }
     | null
 
   if (!response.ok) {
@@ -83,12 +98,26 @@ export async function startCheckout(input: {
     return { ok: false, code, message: MESSAGES[code] }
   }
 
-  // Only a real https URL is allowed to navigate away: an attacker who could
-  // influence this response must not be able to produce a javascript: target.
-  const url = body?.redirectUrl ?? ''
-  if (!body?.orderId || !/^https:\/\/[^\s]+$/i.test(url)) {
+  const qris = body?.qris
+  // A session without a scannable code or a positive total is unusable: the
+  // buyer would be shown a QR that pays into nothing.
+  const imageUrl = typeof qris?.imageUrl === 'string' ? qris.imageUrl : ''
+  const payload = typeof qris?.payload === 'string' ? qris.payload : ''
+  const totalIdr = Number(qris?.totalIdr ?? 0)
+  if (!body?.orderId || (!imageUrl && !payload) || !Number.isFinite(totalIdr) || totalIdr <= 0) {
     return { ok: false, code: 'unknown', message: MESSAGES.unknown }
   }
 
-  return { ok: true, orderId: body.orderId, redirectUrl: url }
+  return {
+    ok: true,
+    orderId: body.orderId,
+    qris: {
+      imageUrl,
+      payload,
+      amountIdr: Number(qris?.amountIdr ?? totalIdr),
+      uniqueCode: Number(qris?.uniqueCode ?? 0),
+      totalIdr,
+      expiredAt: typeof qris?.expiredAt === 'string' ? qris.expiredAt : null,
+    },
+  }
 }

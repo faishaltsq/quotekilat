@@ -51,7 +51,7 @@ describe('MarketingSections', () => {
     expect(within(pro).queryByRole('link')).not.toBeInTheDocument()
     expect(within(pro).queryByRole('button')).not.toBeInTheDocument()
     expect(within(pro).getByText('Sandbox · uji coba')).toBeVisible()
-    expect(within(pro).getByText(/Midtrans sandbox/)).toBeVisible()
+    expect(within(pro).getByText(/KlikQRIS sandbox/)).toBeVisible()
     for (const feature of within(pro).getAllByRole('listitem')) {
       expect(feature).toHaveTextContent('Nanti')
     }

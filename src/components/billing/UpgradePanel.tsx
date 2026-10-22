@@ -1,15 +1,17 @@
 import { useContext, useState } from 'react'
-import { ArrowRight, Loader2 } from 'lucide-react'
+import { ArrowRight, Loader2, RefreshCw } from 'lucide-react'
 import { AuthContext } from '../../lib/cloud/authContext'
 import { useBilling } from '../../lib/billing/useBilling'
-import { startCheckout } from '../../lib/billing/client'
+import { startCheckout, type QrisSession } from '../../lib/billing/client'
 import { track } from '../../lib/analytics/track'
 import './billing.css'
 
+const rupiah = (value: number): string => `Rp${value.toLocaleString('id-ID')}`
+
 /**
- * Sandbox only: this component never renders a price it did not receive from the
- * server, and it never grants anything. It navigates to the provider's page and
- * the webhook does the rest.
+ * Sandbox only. This component never renders a price it did not receive from the
+ * server and never grants anything: it shows the QRIS code the gateway issued,
+ * and the plan changes only when the webhook lands.
  */
 export function UpgradePanel() {
   // Context read directly: the pricing page mounts this outside an AuthProvider,
@@ -17,9 +19,11 @@ export function UpgradePanel() {
   const auth = useContext(AuthContext)
   const authStatus = auth?.status
   const client = auth?.client ?? null
-  const { status: billing, loading } = useBilling()
+  const { status: billing, loading, reload } = useBilling()
   const [busy, setBusy] = useState(false)
+  const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
+  const [session, setSession] = useState<QrisSession | null>(null)
 
   const signedIn = authStatus === 'signed-in'
   const plan = billing?.plan ?? 'free'
@@ -41,9 +45,20 @@ export function UpgradePanel() {
         return
       }
       track('checkout_started', { plan: 'pro' })
-      window.location.assign(result.redirectUrl)
+      setSession(result.qris)
     } finally {
       setBusy(false)
+    }
+  }
+
+  // The plan only changes once the gateway calls the webhook, so a scan cannot
+  // flip the UI by itself: the buyer re-checks, and the server is the only source.
+  const checkAgain = async () => {
+    setChecking(true)
+    try {
+      await reload()
+    } finally {
+      setChecking(false)
     }
   }
 
@@ -69,13 +84,40 @@ export function UpgradePanel() {
     )
   }
 
+  if (session) {
+    return (
+      <div className="billing-upgrade">
+        <p className="billing-note">
+          Pindai QRIS ini dengan aplikasi bank atau e-wallet. Nominal harus tepat{' '}
+          <strong>{rupiah(session.totalIdr)}</strong>
+          {session.uniqueCode > 0 ? ` (termasuk kode unik ${session.uniqueCode})` : ''}.
+        </p>
+        {session.imageUrl
+          ? <img className="billing-qr" src={session.imageUrl} alt="Kode QRIS pembayaran" width={240} height={240} />
+          : <p className="billing-error" role="alert">Kode QR tidak tersedia. Coba buat ulang.</p>}
+        {session.expiredAt && (
+          <p className="billing-note">
+            Berlaku sampai {new Date(session.expiredAt).toLocaleTimeString('id-ID')}.
+          </p>
+        )}
+        <button type="button" className="button button-secondary" onClick={() => { void checkAgain() }} disabled={checking}>
+          {checking ? <><Loader2 size={16} className="spin" /> Memeriksa…</> : <><RefreshCw size={16} aria-hidden="true" /> Saya sudah bayar</>}
+        </button>
+        <p className="billing-note">
+          Paket aktif setelah pembayaran terverifikasi. Halaman ini tidak pernah mengaktifkan Pro sendiri.
+        </p>
+        {error && <p className="billing-error" role="alert">{error}</p>}
+      </div>
+    )
+  }
+
   return (
     <div className="billing-upgrade">
       <p className="billing-note">
-        Pembayaran berjalan di <strong>mode sandbox Midtrans</strong>. Tidak ada uang yang ditarik.
+        Pembayaran QRIS berjalan di <strong>mode sandbox KlikQRIS</strong>. Tidak ada uang yang ditarik.
       </p>
       <button type="button" className="button button-primary" onClick={() => { void upgrade() }} disabled={busy}>
-        {busy ? <><Loader2 size={16} className="spin" /> Membuka pembayaran…</> : <>Coba Pro (sandbox) <ArrowRight size={16} aria-hidden="true" /></>}
+        {busy ? <><Loader2 size={16} className="spin" /> Membuat kode QRIS…</> : <>Coba Pro (sandbox) <ArrowRight size={16} aria-hidden="true" /></>}
       </button>
       {error && <p className="billing-error" role="alert">{error}</p>}
     </div>

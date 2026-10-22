@@ -1,7 +1,7 @@
 # Status Implementasi QuoteKilat
 
 ## Hasil
-**Phase 1 guest MVP selesai, terverifikasi lokal, dan live di produksi.** Live: https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat . Build statis di `dist/`. Database dan AI aktif (Supabase + DeepSeek). Rute billing (`/api/billing/checkout|status|webhook`) sudah ada di kode dan diuji unit, tetapi belum aktif: env Midtrans belum diisi. Migrasi Phase 4 dan Phase 5 SUDAH diterapkan ke database live (diverifikasi 2026-10-22: `billing_orders`, `billing_events`, `entitlements`, `plan_prices`, `market_research_log` ada; tabel karangan mengembalikan 404 sebagai kontrol).
+**Phase 1 guest MVP selesai, terverifikasi lokal, dan live di produksi.** Live: https://quotekilat.vercel.app · repo: https://github.com/faishaltsq/quotekilat . Build statis di `dist/`. Database dan AI aktif (Supabase + DeepSeek). Rute billing (`/api/billing/checkout|status|webhook`) memakai KlikQRIS (QRIS saja) dan sudah ada di kode serta diuji unit, tetapi belum aktif: env KlikQRIS belum diisi. Migrasi Phase 4 dan Phase 5 SUDAH diterapkan ke database live (diverifikasi 2026-10-22: `billing_orders`, `billing_events`, `entitlements`, `plan_prices`, `market_research_log` ada; tabel karangan mengembalikan 404 sebagai kontrol).
 
 ## Fitur yang berfungsi
 - Landing responsif dengan builder nyata di hero, Barang/Jasa/Custom, contoh berlabel, input dinamis, dan state biaya/jumlah independen antar-mode.
@@ -19,8 +19,8 @@
 | `NODE_ENV=development pnpm install --frozen-lockfile --offline` | Lulus; lockfile konsisten, devDependencies tersedia |
 | `pnpm typecheck` | Lulus |
 | `pnpm lint` | Lulus, 0 error |
-| `pnpm test` | **447 tes lulus, 38 file** |
-| `pnpm test:sql` | **107 assertion RLS/grant/kuota/billing/pasar lulus** di `postgres:16-alpine` |
+| `pnpm test` | **463 tes lulus, 38 file** |
+| `pnpm test:sql` | **127 assertion RLS/grant/kuota/billing/pasar/QRIS lulus** di `postgres:16-alpine` |
 | `pnpm build` | Lulus, produksi statis di `dist/` |
 | `pnpm test:e2e` | **26 tes lulus**, Chromium desktop + emulasi mobile |
 | `pnpm audit --prod` | Tidak ditemukan kerentanan yang diketahui |
@@ -73,5 +73,5 @@ Screenshot:
 - Saldo DeepSeek saat pemasangan USD 0,53 — cukup sekitar 1.000 parse. Isi ulang sebelum dipakai publik.
 
 ## Pending — di luar Phase 3
-- **Phase 4:** Midtrans sandbox, webhook terverifikasi/idempotent, lifecycle akses berbayar, dan kuota Pro 40 parse/bulan. Tidak ada penagihan nyata.
+- **Phase 4:** KlikQRIS sandbox (QRIS), webhook terverifikasi per-order dan idempotent, lifecycle akses berbayar, dan kuota Pro 40 parse/bulan. Tidak ada penagihan nyata.
 - **Phase 5:** validasi pengguna, retensi, willingness-to-pay dan observability berbasis consent.

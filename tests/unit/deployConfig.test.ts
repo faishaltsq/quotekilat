@@ -123,14 +123,21 @@ describe('phase 3 secret boundary', () => {
     expect(read('server/_lib/supabase.ts')).toContain("startsWith('sb_secret_')")
   })
 
+  it('the payment gateway keys are documented server-side only', () => {
+    const server = read('.env.server.example')
+    expect(server).toContain('KLIKQRIS_API_KEY')
+    expect(server).toContain('KLIKQRIS_MERCHANT_ID')
+    expect(server).not.toContain('MIDTRANS_SERVER_KEY')
+  })
+
   it('the service-role key is documented server-side only', () => {
     expect(read('.env.server.example')).toContain('SUPABASE_SERVICE_ROLE_KEY')
     expect(read('.env.example')).not.toContain('SUPABASE_SERVICE_ROLE_KEY')
-    expect(read('.env.example')).not.toContain('MIDTRANS_SERVER_KEY')
+    expect(read('.env.example')).not.toContain('KLIKQRIS_API_KEY')
   })
 
   it('server code never inlines a VITE_ payment key', () => {
-    for (const file of ['server/_lib/midtrans.ts', 'server/billing/checkout.ts', 'server/billing/webhook.ts']) {
+    for (const file of ['server/_lib/qris.ts', 'server/billing/checkout.ts', 'server/billing/qrisWebhook.ts']) {
       expect(read(file)).not.toMatch(/process\.env\.VITE_|import\.meta\.env/)
     }
   })

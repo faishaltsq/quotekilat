@@ -1,11 +1,11 @@
-import { createSnapTransaction, readMidtransEnv, type MidtransEnv } from '../_lib/midtrans'
+import { createQrisTransaction, readQrisEnv, type QrisEnv } from '../_lib/qris'
 import { callRpc, readCaller, readServerConfig, type ServerConfig } from '../_lib/supabase'
 
 export type CheckoutDeps = {
   fetch: typeof fetch
   env: NodeJS.ProcessEnv
   config: ServerConfig | null
-  midtrans: MidtransEnv | null
+  qris: QrisEnv | null
 }
 
 export type HandlerResponse = { status: number; json: Record<string, unknown> }
@@ -20,6 +20,11 @@ type OrderRow = { order_id: string; plan: string; amount_idr: number }
 /** Only plans listed here can be bought. The amount always comes from plan_prices. */
 const SELLABLE = new Set(['pro'])
 
+/**
+ * Creates one QRIS transaction for a plan. There is no redirect: the buyer scans
+ * the code on the page, and the plan is only granted when the webhook arrives
+ * with the signature this call stored.
+ */
 export async function handleCheckout(
   input: { authorization: string | null; body: unknown },
   deps: CheckoutDeps,
@@ -31,7 +36,7 @@ export async function handleCheckout(
   const token = (input.authorization ?? '').replace(/^Bearer\s+/i, '').trim()
   if (!token) return error(401, 'unauthorized', 'Masuk dulu untuk berlangganan.')
   if (!deps.config) return error(503, 'disabled', 'Billing belum aktif di server ini.')
-  if (!deps.midtrans) return error(503, 'disabled', 'Billing belum aktif di server ini.')
+  if (!deps.qris) return error(503, 'disabled', 'Billing belum aktif di server ini.')
 
   const caller = await readCaller(token, deps.config, deps.fetch)
   if (!caller) return error(401, 'unauthorized', 'Sesi berakhir. Masuk lagi.')
@@ -42,24 +47,54 @@ export async function handleCheckout(
     return error(502, 'upstream', 'Gagal membuat pesanan. Coba lagi.')
   }
 
-  const snap = await createSnapTransaction(
-    { orderId: order.order_id, amountIdr: Number(order.amount_idr), plan, customerEmail: caller.email },
-    deps.midtrans,
+  const outcome = await createQrisTransaction(
+    {
+      orderId: order.order_id,
+      amountIdr: Number(order.amount_idr),
+      description: `QuoteKilat ${plan === 'pro' ? 'Pro' : plan}`,
+    },
+    deps.qris,
     deps.fetch,
   )
-  if (!snap.ok) return error(502, 'upstream', 'Penyedia pembayaran sedang tidak tersedia.')
 
-  // Store the session so the webhook can be matched back even if the browser
-  // never returns. A failure here is not fatal: the order still exists.
+  if (!outcome.ok) {
+    if (outcome.kind === 'amount') return error(422, 'invalid', outcome.detail ?? 'Nominal tidak valid.')
+    return error(502, 'upstream', 'Penyedia pembayaran sedang tidak tersedia.')
+  }
+
+  // Store the signature and the exact total so the webhook can verify a
+  // notification later even if the browser never comes back. A failure here is
+  // not fatal: the order still exists, and the buyer can retry.
   await callRpc(
-    'attach_billing_session',
-    { p_order_id: order.order_id, p_snap_token: snap.token, p_redirect_url: snap.redirectUrl },
+    'attach_qris_session',
+    {
+      p_order_id: order.order_id,
+      p_signature: outcome.session.signature,
+      p_payload: outcome.session.payload,
+      p_image_url: outcome.session.imageUrl,
+      p_total_idr: outcome.session.totalIdr,
+      p_expired_at: outcome.session.expiredAt,
+    },
     token,
     deps.config,
     deps.fetch,
   )
 
-  return { status: 200, json: { orderId: order.order_id, redirectUrl: snap.redirectUrl } }
+  return {
+    status: 200,
+    json: {
+      orderId: order.order_id,
+      plan,
+      qris: {
+        imageUrl: outcome.session.imageUrl,
+        payload: outcome.session.payload,
+        amountIdr: outcome.session.amountIdr,
+        uniqueCode: outcome.session.uniqueCode,
+        totalIdr: outcome.session.totalIdr,
+        expiredAt: outcome.session.expiredAt,
+      },
+    },
+  }
 }
 
 const MAX_BODY_BYTES = 8192
@@ -84,7 +119,7 @@ export default async function handler(request: Request): Promise<Response> {
       fetch,
       env: process.env,
       config: readServerConfig(),
-      midtrans: readMidtransEnv(),
+      qris: readQrisEnv(),
     },
   )
   return Response.json(outcome.json, { status: outcome.status })

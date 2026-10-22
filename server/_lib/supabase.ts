@@ -56,7 +56,7 @@ export async function callRpc(
 }
 
 /**
- * The webhook has no user session: Midtrans calls us. It authenticates with the
+ * The webhook has no user session: the payment gateway calls us. It authenticates with the
  * service-role key, which is read here and never returned to a caller. A
  * publishable key is rejected outright so a misconfigured deploy fails closed.
  */
